@@ -589,7 +589,7 @@ class ApiRouter {
                     deviceCount: 0
                 };
                 
-                this.deviceManager.addGroup(group);
+                this.deviceManager.addGroup(groupId, groupName, `${groupName}设备分组`);
                 groups.push(group);
             }
             
@@ -838,15 +838,34 @@ class ApiRouter {
                             description: '获取系统统计信息',
                             response: { success: 'boolean', data: 'object' }
                         }
+                    },
+                    system: {
+                        'POST /system/reset': {
+                            description: '重置系统（清除所有设备和分组）',
+                            response: { success: 'boolean', message: 'string' }
+                        },
+                        'POST /system/clear': {
+                            description: '清空所有设备',
+                            response: { success: 'boolean', message: 'string' }
+                        },
+                        'GET /system/health': {
+                            description: '获取系统健康状态和运行信息',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'POST /system/create-test-devices': {
+                            description: '批量创建测试设备和分组',
+                            body: { deviceCount: 'number(default:100)', groupCount: 'number(default:4)' },
+                            response: { success: 'boolean', message: 'string', data: 'object' }
+                        }
                     }
                 },
                 examples: {
                     addDevice: {
                         url: 'POST /api/devices',
                         body: {
-                            name: '客厅智能开关',
-                            type: 'SMART_SWITCH',
-                            groupId: 'living-room'
+                            name: '环境监测装置-001',
+                            type: 'ENVIRONMENT_MONITOR',
+                            groupId: 'test-group-1'
                         }
                     },
                     controlDevice: {
@@ -860,6 +879,24 @@ class ApiRouter {
                         body: {
                             command: 'setColor',
                             params: { red: 255, green: 0, blue: 0 }
+                        }
+                    },
+                    createTestDevices: {
+                        url: 'POST /api/system/create-test-devices',
+                        body: {
+                            deviceCount: 100,
+                            groupCount: 4
+                        }
+                    },
+                    getSystemHealth: {
+                        url: 'GET /api/system/health'
+                    },
+                    addGroup: {
+                        url: 'POST /api/groups',
+                        body: {
+                            groupId: 'lab-a',
+                            name: 'A区实验室',
+                            description: 'A区实验室设备分组'
                         }
                     }
                 }
@@ -879,10 +916,12 @@ class ApiRouter {
      */
     getTypeName(type) {
         const names = {
-            [DeviceType.SMART_SWITCH]: '智能开关',
-            [DeviceType.LED_CONTROLLER]: 'LED控制器',
-            [DeviceType.SENSOR_NODE]: '传感器节点',
-            [DeviceType.RELAY_MODULE]: '继电器模块'
+            [DeviceType.ENVIRONMENT_MONITOR]: '环境检测装置',
+            [DeviceType.STUDENT_POWER_TERMINAL]: '学生电源终端',
+            [DeviceType.ENVIRONMENT_CONTROLLER]: '环境控制装置',
+            [DeviceType.CURTAIN_CONTROLLER]: '窗帘控制装置',
+            [DeviceType.LIGHTING_CONTROLLER]: '灯光控制装置',
+            [DeviceType.LIFT_CONTROLLER]: '升降控制装置'
         };
         return names[type] || type;
     }
@@ -892,10 +931,12 @@ class ApiRouter {
      */
     getTypeDescription(type) {
         const descriptions = {
-            [DeviceType.SMART_SWITCH]: '可远程控制的智能开关设备，支持电量监测和定时控制',
-            [DeviceType.LED_CONTROLLER]: '支持调光调色的LED控制器，可设置多种灯效模式',
-            [DeviceType.SENSOR_NODE]: '多功能环境传感器节点，监测温湿度、光照和运动',
-            [DeviceType.RELAY_MODULE]: '4路继电器控制模块，支持独立控制和互锁功能'
+            [DeviceType.ENVIRONMENT_MONITOR]: '环境数据监测与显示装置',
+            [DeviceType.STUDENT_POWER_TERMINAL]: '学生实验低压电源控制终端',
+            [DeviceType.ENVIRONMENT_CONTROLLER]: '供水排风环境控制装置',
+            [DeviceType.CURTAIN_CONTROLLER]: '窗帘自动控制装置',
+            [DeviceType.LIGHTING_CONTROLLER]: '教室灯光调节控制装置',
+            [DeviceType.LIFT_CONTROLLER]: '实验台升降控制装置'
         };
         return descriptions[type] || '';
     }
@@ -905,10 +946,12 @@ class ApiRouter {
      */
     getDeviceModel(type) {
         const models = {
-            [DeviceType.SMART_SWITCH]: 'ESP8266-SW-001',
-            [DeviceType.LED_CONTROLLER]: 'ESP8266-LED-002',
-            [DeviceType.SENSOR_NODE]: 'ESP8266-SEN-003',
-            [DeviceType.RELAY_MODULE]: 'ESP8266-REL-004'
+            [DeviceType.ENVIRONMENT_MONITOR]: 'ESP8266-ENV-001',
+            [DeviceType.STUDENT_POWER_TERMINAL]: 'ESP8266-PWR-002',
+            [DeviceType.ENVIRONMENT_CONTROLLER]: 'ESP8266-CTRL-003',
+            [DeviceType.CURTAIN_CONTROLLER]: 'ESP8266-CURTAIN-004',
+            [DeviceType.LIGHTING_CONTROLLER]: 'ESP8266-LIGHT-005',
+            [DeviceType.LIFT_CONTROLLER]: 'ESP8266-LIFT-006'
         };
         return models[type] || 'ESP8266-UNKNOWN';
     }
@@ -918,17 +961,23 @@ class ApiRouter {
      */
     getCapabilitiesByType(type) {
         const capabilities = {
-            [DeviceType.SMART_SWITCH]: [
-                '开关控制', '功率监测', '电流监测', '电压监测', '定时控制', '累计用电量'
+            [DeviceType.ENVIRONMENT_MONITOR]: [
+                '温度监测', '湿度监测', '光照监测', '空气质量监测', '传感器校准', '数据记录'
             ],
-            [DeviceType.LED_CONTROLLER]: [
-                '开关控制', '亮度调节', '颜色设置', '灯效模式', '呼吸灯', '彩虹模式'
+            [DeviceType.STUDENT_POWER_TERMINAL]: [
+                '电源控制', '电压监测', '电流监测', '功率监测', '安全保护', '用电统计'
             ],
-            [DeviceType.SENSOR_NODE]: [
-                '温度监测', '湿度监测', '光照监测', '运动检测', '传感器校准', '告警设置'
+            [DeviceType.ENVIRONMENT_CONTROLLER]: [
+                '供水控制', '排风控制', '温度调节', '湿度调节', '自动模式', '手动模式'
             ],
-            [DeviceType.RELAY_MODULE]: [
-                '继电器控制', '4路独立控制', '互锁功能', '状态监测', '批量控制'
+            [DeviceType.CURTAIN_CONTROLLER]: [
+                '窗帘开关', '位置控制', '自动光感', '定时控制', '手动调节', '限位保护'
+            ],
+            [DeviceType.LIGHTING_CONTROLLER]: [
+                '灯光开关', '亮度调节', '色温调节', '场景模式', '定时控制', '能耗监测'
+            ],
+            [DeviceType.LIFT_CONTROLLER]: [
+                '升降控制', '位置控制', '速度调节', '限位保护', '手动模式', '紧急停止'
             ]
         };
         return capabilities[type] || [];
@@ -939,28 +988,40 @@ class ApiRouter {
      */
     getCommandsByType(type) {
         const commands = {
-            [DeviceType.SMART_SWITCH]: [
-                { command: 'turnOn', description: '开启开关', params: [] },
-                { command: 'turnOff', description: '关闭开关', params: [] },
-                { command: 'toggle', description: '切换状态', params: [] },
-                { command: 'schedule', description: '设置定时', params: ['onTime', 'offTime'] }
-            ],
-            [DeviceType.LED_CONTROLLER]: [
-                { command: 'turnOn', description: '开启LED', params: [] },
-                { command: 'turnOff', description: '关闭LED', params: [] },
-                { command: 'setBrightness', description: '设置亮度', params: ['brightness'] },
-                { command: 'setColor', description: '设置颜色', params: ['red', 'green', 'blue'] },
-                { command: 'setMode', description: '设置模式', params: ['mode'] }
-            ],
-            [DeviceType.SENSOR_NODE]: [
+            [DeviceType.ENVIRONMENT_MONITOR]: [
+                { command: 'startMonitoring', description: '开始监测', params: [] },
+                { command: 'stopMonitoring', description: '停止监测', params: [] },
                 { command: 'calibrate', description: '传感器校准', params: ['sensor', 'offset'] },
-                { command: 'setAlert', description: '设置告警', params: ['sensor', 'threshold'] }
+                { command: 'setAlert', description: '设置告警阈值', params: ['sensor', 'threshold'] }
             ],
-            [DeviceType.RELAY_MODULE]: [
-                { command: 'relayOn', description: '开启继电器', params: ['relayId'] },
-                { command: 'relayOff', description: '关闭继电器', params: ['relayId'] },
-                { command: 'relayToggle', description: '切换继电器', params: ['relayId'] },
-                { command: 'setInterlock', description: '设置互锁', params: ['group'] }
+            [DeviceType.STUDENT_POWER_TERMINAL]: [
+                { command: 'powerOn', description: '开启电源', params: [] },
+                { command: 'powerOff', description: '关闭电源', params: [] },
+                { command: 'setVoltage', description: '设置电压', params: ['voltage'] },
+                { command: 'setCurrent', description: '设置电流限制', params: ['current'] }
+            ],
+            [DeviceType.ENVIRONMENT_CONTROLLER]: [
+                { command: 'startWaterSupply', description: '开始供水', params: [] },
+                { command: 'stopWaterSupply', description: '停止供水', params: [] },
+                { command: 'startVentilation', description: '开启排风', params: [] },
+                { command: 'stopVentilation', description: '停止排风', params: [] }
+            ],
+            [DeviceType.CURTAIN_CONTROLLER]: [
+                { command: 'openCurtain', description: '开启窗帘', params: [] },
+                { command: 'closeCurtain', description: '关闭窗帘', params: [] },
+                { command: 'setPosition', description: '设置位置', params: ['position'] }
+            ],
+            [DeviceType.LIGHTING_CONTROLLER]: [
+                { command: 'turnOn', description: '开启灯光', params: [] },
+                { command: 'turnOff', description: '关闭灯光', params: [] },
+                { command: 'setBrightness', description: '设置亮度', params: ['brightness'] },
+                { command: 'setColorTemp', description: '设置色温', params: ['temperature'] }
+            ],
+            [DeviceType.LIFT_CONTROLLER]: [
+                { command: 'liftUp', description: '升起', params: [] },
+                { command: 'liftDown', description: '降下', params: [] },
+                { command: 'setHeight', description: '设置高度', params: ['height'] },
+                { command: 'emergencyStop', description: '紧急停止', params: [] }
             ]
         };
         return commands[type] || [];
@@ -971,30 +1032,28 @@ class ApiRouter {
      */
     getDataFormatByType(type) {
         const formats = {
-            [DeviceType.SMART_SWITCH]: {
-                switch: { state: 'ON|OFF', voltage: 'number', current: 'number', power: 'number', energy: 'number' },
-                schedule: { enabled: 'boolean', onTime: 'string', offTime: 'string' }
+            [DeviceType.ENVIRONMENT_MONITOR]: {
+                temperature: { value: 'number', unit: '°C', range: '-40~80' },
+                humidity: { value: 'number', unit: '%', range: '0~100' },
+                light: { value: 'number', unit: 'lux', range: '0~65535' },
+                airQuality: { value: 'number', unit: 'ppm', range: '0~500' }
             },
-            [DeviceType.LED_CONTROLLER]: {
-                led: { 
-                    state: 'ON|OFF', 
-                    brightness: 'number(0-100)', 
-                    color: { red: 'number(0-255)', green: 'number(0-255)', blue: 'number(0-255)' },
-                    mode: 'static|breathing|rainbow|strobe'
-                }
+            [DeviceType.STUDENT_POWER_TERMINAL]: {
+                power: { state: 'ON|OFF', voltage: 'number', current: 'number', power: 'number' },
+                safety: { overCurrent: 'boolean', overVoltage: 'boolean', shortCircuit: 'boolean' }
             },
-            [DeviceType.SENSOR_NODE]: {
-                sensors: {
-                    temperature: { value: 'number', unit: 'string', calibration: 'number' },
-                    humidity: { value: 'number', unit: 'string', calibration: 'number' },
-                    light: { value: 'number', unit: 'string' },
-                    motion: { detected: 'boolean', lastDetection: 'string', sensitivity: 'number' }
-                }
+            [DeviceType.ENVIRONMENT_CONTROLLER]: {
+                water: { state: 'ON|OFF', flow: 'number', pressure: 'number' },
+                ventilation: { state: 'ON|OFF', speed: 'number', direction: 'IN|OUT' }
             },
-            [DeviceType.RELAY_MODULE]: {
-                relays: [
-                    { id: 'number', state: 'ON|OFF', name: 'string', type: 'NO|NC', voltage: 'number', maxCurrent: 'number' }
-                ]
+            [DeviceType.CURTAIN_CONTROLLER]: {
+                curtain: { state: 'OPEN|CLOSE|MOVING', position: 'number', target: 'number' }
+            },
+            [DeviceType.LIGHTING_CONTROLLER]: {
+                light: { state: 'ON|OFF', brightness: 'number', colorTemp: 'number', power: 'number' }
+            },
+            [DeviceType.LIFT_CONTROLLER]: {
+                lift: { state: 'UP|DOWN|STOPPED', height: 'number', target: 'number', speed: 'number' }
             }
         };
         return formats[type] || {};
