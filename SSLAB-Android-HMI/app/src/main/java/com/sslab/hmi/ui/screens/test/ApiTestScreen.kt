@@ -164,7 +164,7 @@ fun ApiTestScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "服务器地址: http://localhost:8080",
+                            text = "服务器地址: http://192.168.0.145:8080",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }

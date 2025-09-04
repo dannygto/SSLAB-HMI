@@ -24,7 +24,7 @@ fun ServerConnectionScreen(
     onNavigateBack: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel()
 ) {
-    var serverUrl by remember { mutableStateOf("http://192.168.1.100:8080") }
+    var serverUrl by remember { mutableStateOf("http://192.168.0.145:8080") }
     var isConnecting by remember { mutableStateOf(false) }
     
     val isConnected by viewModel.isConnected.collectAsState()
@@ -73,7 +73,7 @@ fun ServerConnectionScreen(
                         value = serverUrl,
                         onValueChange = { serverUrl = it },
                         label = { Text("服务器地址") },
-                        placeholder = { Text("http://192.168.1.100:8080") },
+                        placeholder = { Text("http://192.168.0.145:8080") },
                         leadingIcon = {
                             Icon(Icons.Default.Computer, contentDescription = null)
                         },
@@ -264,6 +264,7 @@ private fun PresetServerAddresses(
     onAddressSelected: (String) -> Unit
 ) {
     val presetAddresses = listOf(
+        "http://192.168.0.145:8080",
         "http://192.168.1.100:8080",
         "http://192.168.0.100:8080", 
         "http://10.0.0.100:8080",

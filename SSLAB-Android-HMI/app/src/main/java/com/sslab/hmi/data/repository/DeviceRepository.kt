@@ -26,7 +26,7 @@ class DeviceRepository @Inject constructor(
 ) {
     companion object {
         private const val TAG = "DeviceRepository"
-        const val DEFAULT_SERVER_URL = "http://192.168.1.100:8080"
+        const val DEFAULT_SERVER_URL = "http://192.168.0.145:8080"
     }
     
     // 协程作用域

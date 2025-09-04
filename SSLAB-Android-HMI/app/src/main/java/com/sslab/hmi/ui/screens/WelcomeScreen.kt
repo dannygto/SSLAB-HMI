@@ -274,7 +274,7 @@ private fun WelcomePage3() {
                 
                 Text(
                     text = "• 确保设备模拟器服务器正在运行\n" +
-                            "• 默认地址：http://192.168.1.100:8080\n" +
+                            "• 默认地址：http://192.168.0.145:8080\n" +
                             "• 可在设置中修改服务器地址\n" +
                             "• 支持局域网和本地连接",
                     style = MaterialTheme.typography.bodyMedium,

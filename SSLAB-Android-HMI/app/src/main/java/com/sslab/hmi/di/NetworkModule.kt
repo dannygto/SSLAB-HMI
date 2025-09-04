@@ -63,7 +63,7 @@ object NetworkModule {
         gson: Gson
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://localhost:8080/") // SSLAB设备模拟器服务器地址
+            .baseUrl("http://192.168.0.145:8080/") // SSLAB设备模拟器服务器地址
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
