@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SSLAB-HMI</string>
+    <string name="app_full_name">SSLAB实验室环境控制系统</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">首页</string>
+    <string name="nav_teaching_power">教学电源管理</string>
+    <string name="nav_environment">实验环境管理</string>
+    <string name="nav_interactive_teaching">互动教学管理</string>
+    <string name="nav_settings">系统设置</string>
+    <string name="nav_device_discovery">设备发现</string>
+    
+    <!-- Teaching Power Management -->
+    <string name="low_voltage_power_settings">低压教学电源设置</string>
+    <string name="high_voltage_power_settings">高压电源设置</string>
+    <string name="student_power_control">学生电源控制</string>
+    <string name="real_time_voltage">实时电压</string>
+    <string name="output_voltage_setting">设置输出电压</string>
+    <string name="real_time_current">实时电流</string>
+    <string name="current_limit_setting">设置限制电流</string>
+    <string name="output_control">输出控制</string>
+    <string name="dc_ac_mode">直流-交流</string>
+    <string name="sync_parameters">一键同步参数</string>
+    <string name="student_group_control">学生分组开关</string>
+    
+    <!-- Common -->
+    <string name="on">开</string>
+    <string name="off">关</string>
+    <string name="enable">启用</string>
+    <string name="disable">禁用</string>
+    <string name="sync">同步</string>
+    <string name="online_devices">在线设备</string>
+    <string name="last_sync">最后同步</string>
+    <string name="voltage_unit">V</string>
+    <string name="current_unit">A</string>
+    <string name="time_unit">s</string>
+    
+    <!-- Error Messages -->
+    <string name="error_invalid_voltage">电压值无效</string>
+    <string name="error_invalid_current">电流值无效</string>
+    <string name="error_device_offline">设备离线</string>
+    <string name="error_sync_failed">同步失败</string>
+</resources>

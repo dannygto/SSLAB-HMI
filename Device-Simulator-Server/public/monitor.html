@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时监控 - SSLAB设备模拟器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- 统一导航栏容器 -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+            <!-- 控制面板 -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">📊 监控控制面板</h5>
+                            <div>
+                                <button class="btn btn-success btn-sm me-2" onclick="startMonitoring()">
+                                    ▶️ 开始监控
+                                </button>
+                                <button class="btn btn-warning btn-sm me-2" onclick="pauseMonitoring()">
+                                    ⏸️ 暂停
+                                </button>
+                                <button class="btn btn-danger btn-sm me-2" onclick="stopMonitoring()">
+                                    ⏹️ 停止
+                                </button>
+                                <select class="form-select refresh-interval-select" id="refreshInterval" title="刷新间隔">
+                                    <option value="1000">1秒</option>
+                                    <option value="3000" selected>3秒</option>
+                                    <option value="5000">5秒</option>
+                                    <option value="10000">10秒</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 text-center">
+                                        <h6>📈 监控状态</h6>
+                                        <span id="monitoringStatus" class="badge bg-secondary">未启动</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 text-center">
+                                        <h6>🔢 总设备数</h6>
+                                        <span id="totalDevices" class="h4 text-primary">0</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 text-center">
+                                        <h6>🔗 在线设备</h6>
+                                        <span id="onlineDevices" class="h4 text-success">0</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="border rounded p-3 text-center">
+                                        <h6>⚠️ 离线设备</h6>
+                                        <span id="offlineDevices" class="h4 text-danger">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设备状态图表 -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">📊 设备状态分布</h6>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="deviceStatusChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">📈 设备类型分布</h6>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="deviceTypeChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实时数据流 -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">📡 实时数据流</h6>
+                            <div>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="clearDataStream()">
+                                    🧹 清空
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="exportDataStream()">
+                                    💾 导出
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="dataStream" class="border rounded p-3 bg-dark text-light font-monospace data-stream">
+                                <div class="text-muted">等待数据中...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let devices = {};
+        let groups = {};
+        let monitoring = false;
+        let monitoringInterval = null;
+        let dataStreamData = [];
+        
+        // 图表实例
+        let deviceStatusChart = null;
+        let deviceTypeChart = null;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            loadInitialData();
+            setupSocketListeners();
+            updateRefreshInterval();
+        });
+
+        // 初始化图表
+        function initializeCharts() {
+            // 设备状态图表
+            const statusCtx = document.getElementById('deviceStatusChart').getContext('2d');
+            deviceStatusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['在线', '离线'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#28a745', '#dc3545']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // 设备类型图表
+            const typeCtx = document.getElementById('deviceTypeChart').getContext('2d');
+            deviceTypeChart = new Chart(typeCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '设备数量',
+                        data: [],
+                        backgroundColor: '#007bff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 加载初始数据
+        async function loadInitialData() {
+            try {
+                // 加载设备
+                const devicesResponse = await fetch('/api/devices');
+                const devicesResult = await devicesResponse.json();
+                devices = {};
+                const devicesData = devicesResult.success ? devicesResult.data : devicesResult;
+                if (Array.isArray(devicesData)) {
+                    devicesData.forEach(device => {
+                        devices[device.id] = device;
+                    });
+                }
+
+                // 加载中
+                const groupsResponse = await fetch('/api/groups');
+                const groupsResult = await groupsResponse.json();
+                groups = {};
+                const groupsData = groupsResult.success ? groupsResult.data : groupsResult;
+                if (Array.isArray(groupsData)) {
+                    groupsData.forEach(group => {
+                        groups[group.id] = group;
+                    });
+                }
+
+                updateUI();
+            } catch (error) {
+                console.error('加载初始数据失败:', error);
+            }
+        }
+
+        // Socket事件监听
+        function setupSocketListeners() {
+            socket.on('deviceUpdate', function(device) {
+                devices[device.id] = device;
+                updateUI();
+                addDataStream('DEVICE_UPDATE', device);
+            });
+
+            socket.on('deviceStatusChange', function(data) {
+                if (devices[data.deviceId]) {
+                    devices[data.deviceId].enabled = data.enabled;
+                    updateUI();
+                    addDataStream('STATUS_CHANGE', data);
+                }
+            });
+
+            // 设备控制成功事件
+            socket.on('device:control:success', function(data) {
+                // 刷新设备数据
+                socket.emit('devices:get');
+            });
+
+            // 设备控制失败事件
+            socket.on('device:control:error', function(data) {
+                alert(`设备控制失败: ${data.error}`);
+            });
+        }
+
+        // 更新刷新间隔
+        function updateRefreshInterval() {
+            document.getElementById('refreshInterval').addEventListener('change', function() {
+                if (monitoring) {
+                    stopMonitoring();
+                    startMonitoring();
+                }
+            });
+        }
+
+        // 开始监控
+        function startMonitoring() {
+            if (monitoring) return;
+            
+            monitoring = true;
+            const interval = parseInt(document.getElementById('refreshInterval').value);
+            
+            monitoringInterval = setInterval(() => {
+                refreshDeviceData();
+            }, interval);
+            
+            document.getElementById('monitoringStatus').textContent = '运行中';
+            document.getElementById('monitoringStatus').className = 'badge bg-success';
+        }
+
+        // 暂停监控
+        function pauseMonitoring() {
+            if (!monitoring) return;
+            
+            monitoring = false;
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+            
+            document.getElementById('monitoringStatus').textContent = '已暂停';
+            document.getElementById('monitoringStatus').className = 'badge bg-warning';
+        }
+
+        // 停止监控
+        function stopMonitoring() {
+            pauseMonitoring();
+            
+            document.getElementById('monitoringStatus').textContent = '已停止';
+            document.getElementById('monitoringStatus').className = 'badge bg-danger';
+        }
+
+        // 刷新设备数据
+        async function refreshDeviceData() {
+            try {
+                const response = await fetch('/api/devices');
+                const result = await response.json();
+                const data = result.success ? result.data : result;
+                
+                if (Array.isArray(data)) {
+                    data.forEach(device => {
+                        if (devices[device.id]) {
+                            const oldData = JSON.stringify(devices[device.id].data || {});
+                            const newData = JSON.stringify(device.data || {});
+                            
+                            if (oldData !== newData) {
+                                addDataStream('DATA_REFRESH', device);
+                            }
+                        }
+                        devices[device.id] = device;
+                    });
+                    
+                    updateUI();
+                }
+            } catch (error) {
+                console.error('刷新设备数据失败:', error);
+            }
+        }
+
+        // 更新UI
+        function updateUI() {
+            updateDeviceCounts();
+            updateCharts();
+        }
+
+        // 更新设备计数
+        function updateDeviceCounts() {
+            const deviceList = Object.values(devices);
+            const total = deviceList.length;
+            const online = deviceList.filter(d => d.enabled).length;
+            const offline = total - online;
+
+            document.getElementById('totalDevices').textContent = total;
+            document.getElementById('onlineDevices').textContent = online;
+            document.getElementById('offlineDevices').textContent = offline;
+        }
+
+        // 更新图表
+        function updateCharts() {
+            const deviceList = Object.values(devices);
+            const online = deviceList.filter(d => d.enabled).length;
+            const offline = deviceList.length - online;
+
+            // 更新状态图表
+            deviceStatusChart.data.datasets[0].data = [online, offline];
+            deviceStatusChart.update();
+
+            // 更新类型图表
+            const typeCounts = {};
+            deviceList.forEach(device => {
+                typeCounts[device.type] = (typeCounts[device.type] || 0) + 1;
+            });
+
+            deviceTypeChart.data.labels = Object.keys(typeCounts);
+            deviceTypeChart.data.datasets[0].data = Object.values(typeCounts);
+            deviceTypeChart.update();
+        }
+
+        // 添加数据流
+        function addDataStream(type, data) {
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = {
+                timestamp,
+                type,
+                data
+            };
+            
+            dataStreamData.unshift(entry);
+            if (dataStreamData.length > 100) {
+                dataStreamData.pop();
+            }
+
+            const streamDiv = document.getElementById('dataStream');
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'mb-1';
+            entryDiv.innerHTML = `
+                <span class="text-warning">[${timestamp}]</span> 
+                <span class="text-info">${type}</span>: 
+                <span class="text-light">${JSON.stringify(data).substring(0, 100)}...</span>
+            `;
+            
+            streamDiv.insertBefore(entryDiv, streamDiv.firstChild);
+            
+            // 保持最�?0个条目显�?
+            while (streamDiv.children.length > 50) {
+                streamDiv.removeChild(streamDiv.lastChild);
+            }
+        }
+
+        // 清空数据�?
+        function clearDataStream() {
+            dataStreamData = [];
+            document.getElementById('dataStream').innerHTML = '<div class="text-muted">数据流已清空</div>';
+        }
+
+        // 导出数据�?
+        function exportDataStream() {
+            const data = {
+                exportTime: new Date().toISOString(),
+                devices: devices,
+                dataStream: dataStreamData
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `monitor_data_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 自动开始监�?
+        setTimeout(() => {
+            startMonitoring();
+        }, 1000);
+    </script>
+    
+    <!-- 导航栏组件加载器 -->
+    <script src="js/navbar.js"></script>
+</body>
+</html>

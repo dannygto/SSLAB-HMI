@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSLAB实验室环境控制系统 - 主控台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        .device-status-online {
+            color: #28a745;
+        }
+        .device-status-offline {
+            color: #dc3545;
+        }
+        .device-status-connecting {
+            color: #ffc107;
+        }
+        .group-badge {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一导航栏容器 -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <!-- 欢迎标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="text-center">
+                    <h2 class="mb-2">🏢 SSLAB实验室环境控制系统</h2>
+                    <p class="text-muted">智能硬件设备模拟器管理平台 - 系统概览</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计信息卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-hdd-stack display-4"></i>
+                        <h3 id="totalDevices" class="mt-2">0</h3>
+                        <p class="mb-0">总设备数</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-check-circle display-4"></i>
+                        <h3 id="onlineDevices" class="mt-2">0</h3>
+                        <p class="mb-0">在线设备</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-collection display-4"></i>
+                        <h3 id="totalGroups" class="mt-2">0</h3>
+                        <p class="mb-0">设备分组</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-people display-4"></i>
+                        <h3 id="connectedClients" class="mt-2">0</h3>
+                        <p class="mb-0">连接客户端</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 系统状态 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h6><i class="bi bi-wifi"></i> 连接状态</h6>
+                        <span id="connectionStatus" class="badge bg-warning">连接中...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h6><i class="bi bi-activity"></i> 系统健康</h6>
+                        <div id="systemHealthContainer">
+                            <span class="text-muted">获取中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作面板 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-lightning"></i> 快速操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6>设备控制</h6>
+                                <div class="btn-group-vertical w-100" role="group">
+                                    <button type="button" class="btn btn-outline-success" onclick="controlAllDevices('turnOn')">
+                                        <i class="bi bi-power"></i> 全部开启
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="controlAllDevices('turnOff')">
+                                        <i class="bi bi-stop"></i> 全部关闭
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" onclick="controlAllDevices('toggle')">
+                                        <i class="bi bi-arrow-repeat"></i> 全部切换
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>系统管理</h6>
+                                <div class="btn-group-vertical w-100" role="group">
+                                    <button type="button" class="btn btn-outline-info" onclick="refreshData()">
+                                        <i class="bi bi-arrow-clockwise"></i> 刷新数据
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="resetSystem()">
+                                        <i class="bi bi-bootstrap-reboot"></i> 重置系统
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="clearAllDevices()">
+                                        <i class="bi bi-trash"></i> 清空设备
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>SSLAB设备快速添加</h6>
+                                <div class="btn-group-vertical w-100" role="group">
+                                    <button type="button" class="btn btn-outline-primary" onclick="addQuickDevice('ENVIRONMENT_MONITOR')">
+                                        <i class="bi bi-thermometer-half"></i> 环境监测装置
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="addQuickDevice('STUDENT_POWER_TERMINAL')">
+                                        <i class="bi bi-power"></i> 学生电源终端
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="addQuickDevice('ENVIRONMENT_CONTROLLER')">
+                                        <i class="bi bi-wind"></i> 环境控制器
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="addQuickDevice('CURTAIN_CONTROLLER')">
+                                        <i class="bi bi-window"></i> 窗帘控制器
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="addQuickDevice('LIGHTING_CONTROLLER')">
+                                        <i class="bi bi-lightbulb"></i> 灯光控制器
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="addQuickDevice('LIFT_CONTROLLER')">
+                                        <i class="bi bi-arrow-up-down"></i> 升降控制器
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分组状态概览 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-diagram-3"></i> 分组状态概览</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="groupsOverview" class="row">
+                            <!-- 动态生成分组卡片 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统信息 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-speedometer2"></i> 系统信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="systemInfo">
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <h6 class="text-primary">🏢 SSLAB实验室环境控制系统</h6>
+                                    <small class="text-muted">智能硬件设备模拟器平台</small>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">服务器运行时间</small>
+                                    <div id="serverUptime">--</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">内存使用</small>
+                                    <div id="memoryUsage">--</div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">支持设备类型</small>
+                                    <div class="small">6种SSLAB设备</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">实时通信</small>
+                                    <div class="small">WebSocket + REST API</div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <small class="text-muted">平台功能</small>
+                                    <div class="small">
+                                        ✅ 设备管理 • ✅ 分组管理 • ✅ 实时监控 • ✅ 系统管理
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 活动日志 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-journal-text"></i> 活动日志</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recentActivity">
+                            <p class="text-muted">暂无活动记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Socket.IO -->
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script>
+        // Socket.IO连接
+        const socket = io();
+        const activityLog = [];
+
+        // 连接状态管理
+        socket.on('connect', () => {
+            document.getElementById('connectionStatus').textContent = '已连接';
+            document.getElementById('connectionStatus').className = 'badge bg-success';
+            addActivity('系统连接成功', 'success');
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('connectionStatus').textContent = '已断开';
+            document.getElementById('connectionStatus').className = 'badge bg-danger';
+            addActivity('系统连接断开', 'danger');
+        });
+
+        // 接收统计信息更新
+        socket.on('stats:update', (stats) => {
+            console.log('收到统计数据:', stats); // 调试日志
+            updateStats(stats);
+        });
+
+        // 接收设备列表
+        socket.on('devices:list', (devices) => {
+            console.log('收到设备列表:', devices); // 调试日志
+            // 主页只显示统计信息，详细设备列表在设备管理页面
+        });
+
+        // 接收分组列表
+        socket.on('groups:list', (groups) => {
+            console.log('收到分组列表:', groups); // 调试日志
+            updateGroupsOverview(groups);
+        });
+
+        // 接收分组列表
+        socket.on('groups:list', (groups) => {
+            updateGroupsOverview(groups);
+        });
+
+        // 接收连接信息
+        socket.on('connection:info', (info) => {
+            document.getElementById('connectedClients').textContent = info.connectedClients;
+        });
+
+        // 设备事件监听
+        socket.on('device:deviceAdded', (device) => {
+            addActivity(`设备已添加: ${device.name}`, 'info');
+        });
+
+        socket.on('device:deviceRemoved', (device) => {
+            addActivity(`设备已移除: ${device.name}`, 'warning');
+        });
+
+        socket.on('device:deviceControlled', (data) => {
+            addActivity(`设备控制: ${data.result.name} - ${data.command}`, 'primary');
+        });
+
+        // 更新统计信息
+        function updateStats(stats) {
+            console.log('收到统计数据:', stats); // 调试日志
+            
+            if (stats) {
+                // 更新总设备数
+                const totalDevicesEl = document.getElementById('totalDevices');
+                if (totalDevicesEl) {
+                    totalDevicesEl.textContent = stats.total || 0;
+                }
+                
+                // 更新在线设备数
+                const onlineDevicesEl = document.getElementById('onlineDevices');
+                if (onlineDevicesEl) {
+                    onlineDevicesEl.textContent = stats.online || 0;
+                }
+                
+                // 计算并更新分组数量
+                const groupCount = stats.byGroup ? Object.keys(stats.byGroup).length : 0;
+                const totalGroupsEl = document.getElementById('totalGroups');
+                if (totalGroupsEl) {
+                    totalGroupsEl.textContent = groupCount;
+                }
+                
+                console.log('统计数据已更新:', { 
+                    total: stats.total, 
+                    online: stats.online, 
+                    groups: groupCount 
+                });
+            } else {
+                console.warn('收到空的统计数据');
+            }
+        }
+
+        // 更新分组概览
+        function updateGroupsOverview(groups) {
+            const container = document.getElementById('groupsOverview');
+            container.innerHTML = '';
+            
+            if (groups.length === 0) {
+                container.innerHTML = '<div class="col-12"><p class="text-muted">暂无分组</p></div>';
+                return;
+            }
+            
+            groups.forEach(group => {
+                const groupCard = `
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <span class="group-badge">${group.groupId}</span>
+                                    ${group.name}
+                                </h6>
+                                <p class="card-text text-muted">${group.description || '暂无描述'}</p>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted">楼栋</small>
+                                        <div>${group.building}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">楼层</small>
+                                        <div>${group.floor}层</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">房间</small>
+                                        <div>${group.room}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += groupCard;
+            });
+        }
+
+        // 添加活动日志
+        function addActivity(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const activity = {
+                message,
+                type,
+                timestamp
+            };
+            
+            activityLog.unshift(activity);
+            if (activityLog.length > 50) {
+                activityLog.splice(50);
+            }
+            
+            updateActivityDisplay();
+        }
+
+        // 更新活动显示
+        function updateActivityDisplay() {
+            const container = document.getElementById('recentActivity');
+            container.innerHTML = '';
+            
+            if (activityLog.length === 0) {
+                container.innerHTML = '<p class="text-muted">暂无活动记录</p>';
+                return;
+            }
+            
+            activityLog.slice(0, 10).forEach(activity => {
+                const item = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-${activity.type} me-2">${activity.type}</span>
+                        <span class="flex-grow-1">${activity.message}</span>
+                        <small class="text-muted">${activity.timestamp}</small>
+                    </div>
+                `;
+                container.innerHTML += item;
+            });
+        }
+
+        // 控制所有设备
+        function controlAllDevices(command) {
+            socket.emit('devices:get');
+            socket.once('devices:list', (devices) => {
+                if (devices.length === 0) {
+                    alert('没有可控制的设备');
+                    return;
+                }
+                
+                const deviceIds = devices.map(d => d.id);
+                socket.emit('devices:control:batch', {
+                    deviceIds,
+                    command
+                });
+                
+                addActivity(`批量${command === 'turnOn' ? '开启' : command === 'turnOff' ? '关闭' : '切换'}设备 (${devices.length}台)`, 'primary');
+            });
+        }
+
+        // 刷新数据
+        function refreshData() {
+            console.log('开始刷新数据...');
+            
+            // 使用HTTP API获取数据，确保数据一致性
+            Promise.all([
+                fetch('/api/devices/stats').then(res => res.json()).then(data => data.success ? data.data : { total: 0, online: 0, byGroup: {} }),
+                fetch('/api/groups').then(res => res.json()).then(data => data.success ? data.data : []),
+                fetch('/api/system/health').then(res => res.json()).then(data => data.success ? data.data : { status: 'unknown', uptime: 0 })
+            ]).then(([stats, groups, health]) => {
+                console.log('刷新数据完成:', { stats, groups, health });
+                
+                // 更新界面
+                updateStats(stats);
+                updateGroupsOverview(groups);
+                updateSystemStatus(health);
+                
+                addActivity('数据已刷新', 'info');
+            }).catch(error => {
+                console.error('刷新数据失败:', error);
+                addActivity('数据刷新失败', 'danger');
+            });
+            
+            // 同时通过WebSocket请求更新（双重保险）
+            if (socket && socket.connected) {
+                socket.emit('devices:get');
+                socket.emit('groups:get');
+                socket.emit('stats:get');
+            }
+        }
+        
+        // 更新系统状态显示
+        function updateSystemStatus(health) {
+            const container = document.getElementById('systemHealthContainer');
+            if (container) {
+                const statusText = health.status === 'healthy' ? '正常运行' : 
+                                 health.status === 'unknown' ? '状态未知' : '异常';
+                const statusClass = health.status === 'healthy' ? 'text-success' : 
+                                  health.status === 'unknown' ? 'text-warning' : 'text-danger';
+                
+                const uptimeHours = health.uptime ? Math.floor(health.uptime / 3600) : 0;
+                const uptimeMinutes = health.uptime ? Math.floor((health.uptime % 3600) / 60) : 0;
+                
+                container.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>系统状态: <span class="${statusClass}">${statusText}</span></span>
+                        <small class="text-muted">运行时间: ${uptimeHours}小时${uptimeMinutes}分钟</small>
+                    </div>
+                `;
+            }
+        }
+
+        // 重置系统
+        function resetSystem() {
+            if (confirm('确定要重置系统状态吗？这将重置所有设备状态。')) {
+                socket.emit('system:reset');
+                addActivity('系统已重置', 'warning');
+            }
+        }
+
+        // 清空所有设备
+        function clearAllDevices() {
+            if (confirm('确定要清空所有设备吗？此操作不可撤销！')) {
+                socket.emit('system:clear');
+                addActivity('所有设备已清空', 'danger');
+            }
+        }
+
+        // 快速添加设备
+        function addQuickDevice(type) {
+            const deviceNames = {
+                'ENVIRONMENT_MONITOR': '环境监测装置',
+                'STUDENT_POWER_TERMINAL': '学生电源终端',
+                'ENVIRONMENT_CONTROLLER': '环境控制器',
+                'CURTAIN_CONTROLLER': '窗帘控制器',
+                'LIGHTING_CONTROLLER': '灯光控制器',
+                'LIFT_CONTROLLER': '升降控制器'
+            };
+            
+            const deviceCount = Math.floor(Math.random() * 900) + 100;
+            const deviceConfig = {
+                name: `${deviceNames[type]}-${deviceCount}`,
+                type: type,
+                groupId: 'HX001' // 默认分组：海心楼101
+            };
+            
+            socket.emit('device:add', deviceConfig);
+            addActivity(`快速添加SSLAB设备: ${deviceConfig.name}`, 'success');
+        }
+
+        // 获取系统健康信息
+        function getSystemHealth() {
+            fetch('/api/system/health')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const health = data.data;
+                        
+                        // 更新服务器运行时间
+                        document.getElementById('serverUptime').textContent = health.server.uptimeFormatted;
+                        
+                        // 更新内存使用信息 - 显示系统内存
+                        const memoryText = `${health.memory.system.used}MB / ${health.memory.system.total}MB (${health.memory.system.usagePercent}%)`;
+                        document.getElementById('memoryUsage').textContent = memoryText;
+                        
+                        // 更新连接客户端数
+                        if (document.getElementById('connectedClients')) {
+                            document.getElementById('connectedClients').textContent = health.application.connectedClients;
+                        }
+                        
+                        // 更新系统健康状态显示
+                        const healthContainer = document.getElementById('systemHealthContainer');
+                        if (healthContainer) {
+                            const statusClass = health.status === 'healthy' ? 'text-success' : 'text-danger';
+                            const platformInfo = `${health.system.platform} ${health.system.architecture}`;
+                            const cpuInfo = `${health.system.cpuCount}核 CPU`;
+                            
+                            healthContainer.innerHTML = `
+                                <span class="${statusClass}">● ${health.status}</span>
+                                <br><small class="text-muted">${platformInfo} • ${cpuInfo}</small>
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('获取系统健康信息失败:', error);
+                    // 显示错误状态
+                    const healthContainer = document.getElementById('systemHealthContainer');
+                    if (healthContainer) {
+                        healthContainer.innerHTML = '<span class="text-danger">● 获取失败</span>';
+                    }
+                });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 请求初始数据
+            refreshData();
+            
+            // 定期获取系统健康信息
+            getSystemHealth();
+            setInterval(getSystemHealth, 30000);
+            
+            addActivity('系统界面已加载', 'info');
+        });
+    </script>
+    
+    <!-- 导航栏组件加载器 -->
+    <script src="js/navbar.js"></script>
+</body>
+</html>

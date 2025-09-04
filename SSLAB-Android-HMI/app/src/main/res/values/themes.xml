@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.SSLabHMI" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <item name="colorPrimary">@color/dark_blue_700</item>
+        <item name="colorOnPrimary">@color/grey_50</item>
+        <item name="colorPrimaryContainer">@color/light_blue_100</item>
+        <item name="colorOnPrimaryContainer">@color/dark_blue_900</item>
+        
+        <item name="colorSecondary">@color/dark_blue_600</item>
+        <item name="colorOnSecondary">@color/grey_50</item>
+        <item name="colorSecondaryContainer">@color/light_blue_50</item>
+        <item name="colorOnSecondaryContainer">@color/dark_blue_800</item>
+        
+        <item name="android:statusBarColor">@color/dark_blue_700</item>
+    </style>
+
+    <style name="Theme.SSLabHMI" parent="Base.Theme.SSLabHMI" />
+</resources>

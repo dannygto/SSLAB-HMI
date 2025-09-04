@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>组管理 - SSLAB设备模拟器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 统一导航栏容器 -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">📊 设备组列表</h5>
+                            <button class="btn btn-success btn-sm" onclick="showCreateGroupModal()">
+                                ➕ 创建新组
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="groupsList" class="list-group">
+                                <!-- 动态加载组列表 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">📋 组详细信息</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="groupDetails">
+                                <div class="text-muted text-center py-5">
+                                    请选择一个组查看详细信息
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">🔧 组操作</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6>批量分配设备</h6>
+                                    <label for="targetGroupSelect" class="form-label visually-hidden">选择目标组</label>
+                                    <select class="form-select mb-2" id="targetGroupSelect" aria-label="选择要分配设备的目标组">
+                                        <option value="">选择目标组</option>
+                                    </select>
+                                    <div id="unassignedDevices" class="border rounded p-2 unassigned-devices-list" role="list" aria-label="未分配的设备列表">
+                                        <!-- 未分配的设备列表 -->
+                                    </div>
+                                    <button class="btn btn-primary btn-sm mt-2" onclick="assignSelectedDevices()">
+                                        分配选中设备
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>组统计信息</h6>
+                                    <div id="groupStats">
+                                        <!-- 组统计信息 -->
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6>快速操作</h6>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-warning btn-sm" onclick="enableAllDevicesInGroup()">
+                                            启用组内所有设备
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" onclick="disableAllDevicesInGroup()">
+                                            禁用组内所有设备
+                                        </button>
+                                        <button class="btn btn-info btn-sm" onclick="exportGroupConfig()">
+                                            导出组配置
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建组模态框 -->
+    <div class="modal fade" id="createGroupModal" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-describedby="createGroupModalDescription">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createGroupModalLabel">创建新设备组</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="createGroupModalDescription" class="visually-hidden">创建新的设备分组来管理相关设备</div>
+                    <form id="createGroupForm">
+                        <div class="mb-3">
+                            <label for="newGroupId" class="form-label">组ID *</label>
+                            <input type="text" class="form-control" id="newGroupId" required 
+                                   placeholder="例：HX002, SY003">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newGroupName" class="form-label">组名称 *</label>
+                            <input type="text" class="form-control" id="newGroupName" required 
+                                   placeholder="例：华夏楼202教室">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newGroupDescription" class="form-label">组描述</label>
+                            <textarea class="form-control" id="newGroupDescription" rows="3"
+                                      placeholder="描述这个组的用途和位置信息"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newGroupCapacity" class="form-label">设备容量</label>
+                            <input type="number" class="form-control" id="newGroupCapacity" min="1" max="100" value="20">
+                        </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="createGroup()">创建组</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let groups = {};
+        let devices = {};
+        let selectedGroupId = null;
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGroups();
+            loadDevices();
+            setupSocketListeners();
+        });
+
+        // Socket事件监听
+        function setupSocketListeners() {
+            socket.on('deviceUpdate', function(device) {
+                devices[device.id] = device;
+                if (selectedGroupId && device.groupId === selectedGroupId) {
+                    showGroupDetails(selectedGroupId);
+                }
+                updateGroupStats();
+            });
+
+            socket.on('deviceStatusChange', function(data) {
+                if (devices[data.deviceId]) {
+                    devices[data.deviceId].enabled = data.enabled;
+                    updateGroupStats();
+                }
+            });
+        }
+
+        // 加载组列表
+        async function loadGroups() {
+            try {
+                const response = await fetch('/api/groups');
+                const result = await response.json();
+                const data = result.success ? result.data : result;
+                groups = {};
+                if (Array.isArray(data)) {
+                    data.forEach(group => {
+                        groups[group.id] = group;
+                    });
+                }
+                displayGroups();
+                updateTargetGroupSelect();
+            } catch (error) {
+                console.error('加载组列表失败:', error);
+            }
+        }
+
+        // 加载设备列表
+        async function loadDevices() {
+            try {
+                const response = await fetch('/api/devices');
+                const result = await response.json();
+                devices = {};
+                const data = result.success ? result.data : result;
+                if (Array.isArray(data)) {
+                    data.forEach(device => {
+                        devices[device.id] = device;
+                    });
+                }
+                displayUnassignedDevices();
+                updateGroupStats();
+            } catch (error) {
+                console.error('加载设备列表失败:', error);
+            }
+        }
+
+        // 显示组列表
+        function displayGroups() {
+            const groupsList = document.getElementById('groupsList');
+            groupsList.innerHTML = '';
+
+            Object.values(groups).forEach(group => {
+                const deviceCount = Object.values(devices).filter(d => d.groupId === group.id).length;
+                const enabledCount = Object.values(devices).filter(d => d.groupId === group.id && d.enabled).length;
+                
+                const groupItem = document.createElement('div');
+                groupItem.className = `list-group-item list-group-item-action ${selectedGroupId === group.id ? 'active' : ''}`;
+                groupItem.onclick = () => selectGroup(group.id);
+                
+                groupItem.innerHTML = `
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${group.name || group.id}</h6>
+                        <small class="text-muted">${enabledCount}/${deviceCount} 设备</small>
+                    </div>
+                    <p class="mb-1">${group.description || '无描述'}</p>
+                    <small class="text-muted">组ID: ${group.id}</small>
+                `;
+                
+                groupsList.appendChild(groupItem);
+            });
+        }
+
+        // 选择组
+        function selectGroup(groupId) {
+            selectedGroupId = groupId;
+            displayGroups(); // 重新显示以更新选中状态
+            showGroupDetails(groupId);
+        }
+
+        // 显示组详细信息
+        function showGroupDetails(groupId) {
+            const group = groups[groupId];
+            const groupDevices = Object.values(devices).filter(d => d.groupId === groupId);
+            
+            const groupDetails = document.getElementById('groupDetails');
+            groupDetails.innerHTML = `
+                <div class="mb-3">
+                    <h6>📋 基本信息</h6>
+                    <p><strong>组ID:</strong> ${group.id}</p>
+                    <p><strong>组名称:</strong> ${group.name || '未设置'}</p>
+                    <p><strong>描述:</strong> ${group.description || '无描述'}</p>
+                    <p><strong>设备容量:</strong> ${group.capacity || '无限制'}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>📊 统计信息</h6>
+                    <p><strong>设备总数:</strong> ${groupDevices.length}</p>
+                    <p><strong>在线设备:</strong> ${groupDevices.filter(d => d.enabled).length}</p>
+                    <p><strong>离线设备:</strong> ${groupDevices.filter(d => !d.enabled).length}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>🔧 设备列表</h6>
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>设备名称</th>
+                                    <th>类型</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${groupDevices.map(device => `
+                                    <tr>
+                                        <td>${device.name}</td>
+                                        <td>${device.type}</td>
+                                        <td>
+                                            <span class="badge ${device.enabled ? 'bg-success' : 'bg-secondary'}">
+                                                ${device.enabled ? '在线' : '离线'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm ${device.enabled ? 'btn-warning' : 'btn-success'}" 
+                                                    onclick="toggleDevice('${device.id}')">
+                                                ${device.enabled ? '禁用' : '启用'}
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="removeDeviceFromGroup('${device.id}')">
+                                                移除
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-warning btn-sm me-2" onclick="editGroup('${groupId}')">编辑组</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteGroup('${groupId}')">删除组</button>
+                </div>
+            `;
+        }
+
+        // 显示未分配的设备
+        function displayUnassignedDevices() {
+            const unassignedDevices = Object.values(devices).filter(d => !d.groupId || d.groupId === '');
+            const container = document.getElementById('unassignedDevices');
+            
+            container.innerHTML = unassignedDevices.map(device => `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="${device.id}" id="device_${device.id}">
+                    <label class="form-check-label" for="device_${device.id}">
+                        ${device.name} (${device.type})
+                    </label>
+                </div>
+            `).join('') || '<div class="text-muted">所有设备都已分配</div>';
+        }
+
+        // 更新目标组选择框
+        function updateTargetGroupSelect() {
+            const select = document.getElementById('targetGroupSelect');
+            select.innerHTML = '<option value="">选择目标组</option>';
+            
+            Object.values(groups).forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.textContent = `${group.name || group.id} (${group.id})`;
+                select.appendChild(option);
+            });
+        }
+
+        // 更新组统计信息
+        function updateGroupStats() {
+            const stats = {};
+            Object.values(groups).forEach(group => {
+                const groupDevices = Object.values(devices).filter(d => d.groupId === group.id);
+                stats[group.id] = {
+                    total: groupDevices.length,
+                    enabled: groupDevices.filter(d => d.enabled).length
+                };
+            });
+
+            const container = document.getElementById('groupStats');
+            container.innerHTML = Object.entries(stats).map(([groupId, stat]) => `
+                <div class="mb-2">
+                    <strong>${groups[groupId]?.name || groupId}:</strong> ${stat.enabled}/${stat.total} 在线
+                </div>
+            `).join('') || '<div class="text-muted">暂无数据</div>';
+        }
+
+        // 显示创建组模态框
+        function showCreateGroupModal() {
+            new bootstrap.Modal(document.getElementById('createGroupModal')).show();
+        }
+
+        // 创建组
+        async function createGroup() {
+            const groupId = document.getElementById('newGroupId').value.trim();
+            const groupName = document.getElementById('newGroupName').value.trim();
+            const groupDescription = document.getElementById('newGroupDescription').value.trim();
+            const groupCapacity = parseInt(document.getElementById('newGroupCapacity').value);
+
+            if (!groupId || !groupName) {
+                alert('请填写必填字段');
+                return;
+            }
+
+            if (groups[groupId]) {
+                alert('组ID已存在');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/groups', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        groupId: groupId,
+                        name: groupName,
+                        description: groupDescription,
+                        capacity: groupCapacity
+                    })
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('createGroupModal')).hide();
+                    document.getElementById('createGroupForm').reset();
+                    await loadGroups();
+                    alert('组创建成功');
+                } else {
+                    alert('创建组失败');
+                }
+            } catch (error) {
+                console.error('创建组失败:', error);
+                alert('创建组失败');
+            }
+        }
+
+        // 分配选中的设备
+        async function assignSelectedDevices() {
+            const targetGroupId = document.getElementById('targetGroupSelect').value;
+            if (!targetGroupId) {
+                alert('请选择目标组');
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('#unassignedDevices input[type="checkbox"]:checked');
+            const deviceIds = Array.from(checkboxes).map(cb => cb.value);
+
+            if (deviceIds.length === 0) {
+                alert('请选择要分配的设备');
+                return;
+            }
+
+            try {
+                const results = [];
+                for (const deviceId of deviceIds) {
+                    const response = await fetch(`/api/devices/${deviceId}/group`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ groupId: targetGroupId })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error(`设备 ${deviceId} 分配失败:`, errorData);
+                        results.push({ deviceId, success: false, error: errorData.error || '未知错误' });
+                    } else {
+                        results.push({ deviceId, success: true });
+                    }
+                }
+                
+                const failures = results.filter(r => !r.success);
+                if (failures.length > 0) {
+                    console.error('分配失败的设备:', failures);
+                    alert(`部分设备分配失败: ${failures.map(f => f.deviceId).join(', ')}`);
+                } else {
+                    alert('所有设备分配成功');
+                }
+                
+                await loadDevices();
+            } catch (error) {
+                console.error('分配设备时有错误:', error);
+                alert('分配设备时有错误');
+            }
+        }
+
+        // 切换设备状态
+        async function toggleDevice(deviceId) {
+            try {
+                const device = devices[deviceId];
+                const response = await fetch(`/api/devices/${deviceId}/toggle`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    await loadDevices();
+                    if (selectedGroupId) {
+                        showGroupDetails(selectedGroupId);
+                    }
+                }
+            } catch (error) {
+                console.error('切换设备状态失败:', error);
+            }
+        }
+
+        // 从组中移除设备
+        async function removeDeviceFromGroup(deviceId) {
+            if (!confirm('确认要将此设备从组中移除吗？')) return;
+
+            try {
+                await fetch(`/api/devices/${deviceId}/group`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ groupId: '' })
+                });
+                
+                await loadDevices();
+                if (selectedGroupId) {
+                    showGroupDetails(selectedGroupId);
+                }
+                alert('设备已从组中移除');
+            } catch (error) {
+                console.error('移除设备失败:', error);
+                alert('移除设备失败');
+            }
+        }
+
+        // 启用组内所有设备
+        async function enableAllDevicesInGroup() {
+            if (!selectedGroupId) {
+                alert('请先选择一个组');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/groups/${selectedGroupId}/enable-all`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    await loadDevices();
+                    showGroupDetails(selectedGroupId);
+                    alert('已启用组内所有设备');
+                }
+            } catch (error) {
+                console.error('启用设备失败:', error);
+                alert('启用设备失败');
+            }
+        }
+
+        // 禁用组内所有设备
+        async function disableAllDevicesInGroup() {
+            if (!selectedGroupId) {
+                alert('请先选择一个组');
+                return;
+            }
+
+            if (!confirm('确认要禁用组内所有设备吗？')) return;
+
+            try {
+                const response = await fetch(`/api/groups/${selectedGroupId}/disable-all`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    await loadDevices();
+                    showGroupDetails(selectedGroupId);
+                    alert('已禁用组内所有设备');
+                }
+            } catch (error) {
+                console.error('禁用设备失败:', error);
+                alert('禁用设备失败');
+            }
+        }
+
+        // 导出组配置
+        function exportGroupConfig() {
+            if (!selectedGroupId) {
+                alert('请先选择一个组');
+                return;
+            }
+
+            const group = groups[selectedGroupId];
+            const groupDevices = Object.values(devices).filter(d => d.groupId === selectedGroupId);
+            
+            const config = {
+                group: group,
+                devices: groupDevices,
+                exportTime: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `group_${selectedGroupId}_config.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 编辑组
+        function editGroup(groupId) {
+            alert('编辑组功能待实现');
+        }
+
+        // 删除组
+        async function deleteGroup(groupId) {
+            if (!confirm(`确认要删除组 ${groups[groupId]?.name || groupId} 吗？`)) return;
+
+            try {
+                const response = await fetch(`/api/groups/${groupId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadGroups();
+                    await loadDevices();
+                    if (selectedGroupId === groupId) {
+                        selectedGroupId = null;
+                        document.getElementById('groupDetails').innerHTML = `
+                            <div class="text-muted text-center py-5">
+                                请选择一个组查看详细信息
+                            </div>
+                        `;
+                    }
+                    alert('组删除成功');
+                }
+            } catch (error) {
+                console.error('删除组失败:', error);
+                alert('删除组失败');
+            }
+        }
+    </script>
+    
+    <!-- 导航栏组件加载器 -->
+    <script src="js/navbar.js"></script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "SSLAB-HMI: 构建Android应用",
+			"type": "shell",
+			"command": "cd SSLAB-Android-HMI && gradlew.bat assembleDebug",
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		},
+		{
+			"label": "🚀 启动SSLAB设备模拟器服务器",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Write-Host '🔄 正在清理占用的端口...' -ForegroundColor Yellow; Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; Write-Host '📂 切换到服务器目录...' -ForegroundColor Cyan; Set-Location 'D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server'; Write-Host '🚀 启动SSLAB设备模拟器服务器...' -ForegroundColor Green; node src/server.js"
+			],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "🛑 停止所有Node进程",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Write-Host '🛑 正在停止所有Node.js进程...' -ForegroundColor Red; Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; Write-Host '✅ 所有Node.js进程已停止' -ForegroundColor Green"
+			],
+			"group": "build",
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "🔧 重启SSLAB设备模拟器服务器",
+			"type": "shell", 
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Write-Host '� 停止现有服务器...' -ForegroundColor Red; Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 3; Write-Host '� 重新启动服务器...' -ForegroundColor Green; Set-Location 'D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server'; node src/server.js"
+			],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server"  
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "📦 安装依赖包",
+			"type": "shell",
+			"command": "npm",
+			"args": ["install"],
+			"group": "build",
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "🌐 打开Web界面",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command", 
+				"Start-Process 'http://localhost:8080'"
+			],
+			"group": "build",
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "never",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": false,
+				"clear": false
+			}
+		}
+	]
+}
