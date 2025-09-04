@@ -38,6 +38,10 @@ class TeachingPowerViewModel @Inject constructor(
     private val _selectedGroupId = MutableStateFlow<String>("")
     val selectedGroupId: StateFlow<String> = _selectedGroupId.asStateFlow()
 
+    // 同步状态管理
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
     init {
         loadDevices()
         loadStudentGroups()
@@ -258,16 +262,24 @@ class TeachingPowerViewModel @Inject constructor(
     fun syncAllStudentDevices() {
         viewModelScope.launch {
             try {
+                _isSyncing.value = true
                 _uiState.value = _uiState.value.copy(isLoading = true)
+                
+                // 模拟同步过程
+                kotlinx.coroutines.delay(2000) // 2秒同步时间
+                
                 // 同步逻辑
                 loadStudentGroups()
                 loadStudentDevices()
+                
                 _uiState.value = _uiState.value.copy(isLoading = false)
+                _isSyncing.value = false
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = e.message
                 )
+                _isSyncing.value = false
             }
         }
     }

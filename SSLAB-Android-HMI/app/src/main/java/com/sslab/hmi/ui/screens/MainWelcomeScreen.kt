@@ -29,6 +29,7 @@ import com.cn.sslab.hmi.ui.theme.BlueGradientColors
 fun MainWelcomeScreen(
     onNavigateToDeviceList: () -> Unit,
     onNavigateToTeachingPower: () -> Unit,
+    onNavigateToEnvironment: () -> Unit,
     onNavigateToClassroomConfig: () -> Unit,
     onNavigateToApiTest: () -> Unit,
     onNavigateToServerConnection: () -> Unit
@@ -274,6 +275,21 @@ fun MainWelcomeScreen(
                                 BlueGradientColors.CyanBlue
                             ),
                             onClick = onNavigateToTeachingPower
+                        )
+
+                        // 环境监测 - 使用绿色渐变
+                        FunctionCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            title = "环境监测",
+                            description = "温湿度监控\nCO2/PM2.5检测",
+                            icon = Icons.Default.Nature,
+                            gradientColors = listOf(
+                                BlueGradientColors.TealGreen,
+                                BlueGradientColors.Green
+                            ),
+                            onClick = onNavigateToEnvironment
                         )
                     }
 

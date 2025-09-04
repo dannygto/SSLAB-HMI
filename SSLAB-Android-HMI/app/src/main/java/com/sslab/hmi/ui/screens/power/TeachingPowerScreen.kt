@@ -43,6 +43,7 @@ fun TeachingPowerScreen(
     val studentGroups by viewModel.studentGroups.collectAsState()
     val studentDevices by viewModel.studentDevices.collectAsState()
     val selectedGroupId by viewModel.selectedGroupId.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
     
     // 自定义数字输入状态
     var showNumberInput by remember { mutableStateOf(false) }
@@ -85,21 +86,36 @@ fun TeachingPowerScreen(
                 
                 // 一键同步按钮
                 ElevatedButton(
-                    onClick = { viewModel.syncAllStudentDevices() },
+                    onClick = { 
+                        if (!isSyncing) {
+                            viewModel.syncAllStudentDevices()
+                        }
+                    },
+                    enabled = !isSyncing,
                     colors = ButtonDefaults.elevatedButtonColors(
-                        containerColor = BlueGradientColors.AccentYellow,
-                        contentColor = BlueGradientColors.Primary
+                        containerColor = if (isSyncing) BlueGradientColors.Primary.copy(alpha = 0.6f) else BlueGradientColors.AccentYellow,
+                        contentColor = if (isSyncing) Color.White else BlueGradientColors.Primary,
+                        disabledContainerColor = BlueGradientColors.Primary.copy(alpha = 0.3f),
+                        disabledContentColor = Color.White.copy(alpha = 0.6f)
                     ),
                     elevation = ButtonDefaults.elevatedButtonElevation(defaultElevation = 4.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Sync,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    if (isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "一键同步",
+                        text = if (isSyncing) "同步中..." else "一键同步",
                         fontWeight = FontWeight.Bold
                     )
                 }
