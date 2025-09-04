@@ -57,7 +57,7 @@
 		},
 		{
 			"label": "🔧 重启SSLAB设备模拟器服务器",
-			"type": "shell", 
+			"type": "shell",
 			"command": "powershell",
 			"args": [
 				"-Command",
@@ -66,7 +66,7 @@
 			"group": "build",
 			"isBackground": true,
 			"options": {
-				"cwd": "D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server"  
+				"cwd": "D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server"
 			},
 			"presentation": {
 				"echo": true,
@@ -82,7 +82,9 @@
 			"label": "📦 安装依赖包",
 			"type": "shell",
 			"command": "npm",
-			"args": ["install"],
+			"args": [
+				"install"
+			],
 			"group": "build",
 			"options": {
 				"cwd": "D:\\CODE\\SSLAB-HMI\\Device-Simulator-Server"
@@ -101,7 +103,7 @@
 			"type": "shell",
 			"command": "powershell",
 			"args": [
-				"-Command", 
+				"-Command",
 				"Start-Process 'http://localhost:8080'"
 			],
 			"group": "build",
@@ -116,6 +118,143 @@
 				"showReuseMessage": false,
 				"clear": false
 			}
+		},
+		{
+			"label": "AI助手核心组件开发",
+			"type": "shell",
+			"command": "echo '开始AI助手前端界面开发任务' && echo '任务1: 创建FloatingAIAssistant.kt组件' && echo '任务2: 实现AIStatusIndicator.kt组件' && echo '任务3: 设计AIAvatarView.kt组件' && echo '任务4: 集成语音识别API接口'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "AI助手核心组件开发任务启动",
+			"type": "shell",
+			"command": "Write-Host '开始AI助手前端界面开发任务'; Write-Host '任务1: 创建FloatingAIAssistant.kt组件'; Write-Host '任务2: 实现AIStatusIndicator.kt组件'; Write-Host '任务3: 设计AIAvatarView.kt组件'; Write-Host '任务4: 集成语音识别API接口'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "蓝色渐变主题系统实施",
+			"type": "shell",
+			"command": "Write-Host '正在实施蓝色渐变主题系统...'; Write-Host '任务1: 已创建BlueGradientTheme.kt主题配置'; Write-Host '任务2: 更新MainActivity使用新主题'; Write-Host '任务3: 更新所有UI组件应用蓝色渐变'; Write-Host '任务4: 更新TopAppBar使用渐变背景'",
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "� Android清理构建",
+			"type": "shell",
+			"command": "cd SSLAB-Android-HMI && .\\gradlew.bat clean",
+			"group": "build",
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "🏗️ Android完整构建",
+			"type": "shell",
+			"command": "cd SSLAB-Android-HMI && .\\gradlew.bat build",
+			"group": "build",
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gradle"
+			]
+		},
+		{
+			"label": "📱 Android调试构建",
+			"type": "shell",
+			"command": "cd SSLAB-Android-HMI && .\\gradlew.bat assembleDebug",
+			"group": "build",
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gradle"
+			]
+		},
+		{
+			"label": "🧹 Android清理+构建",
+			"type": "shell",
+			"command": "cd SSLAB-Android-HMI && .\\gradlew.bat clean build",
+			"group": "build",
+			"options": {
+				"cwd": "D:\\CODE\\SSLAB-HMI"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": [
+				"$gradle"
+			]
+		},
+		{
+			"label": "🔧 修复Android构建错误",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Write-Host '=== 🔧 修复Android构建错误 ===' -ForegroundColor Red; Write-Host '⚠️  当前状态: 项目完全无法构建' -ForegroundColor Yellow; Write-Host '🎯 修复目标:' -ForegroundColor Cyan; Write-Host '  1. 修复主题颜色引用错误' -ForegroundColor White; Write-Host '  2. 修复组件导入路径错误' -ForegroundColor White; Write-Host '  3. 修复ViewModel函数签名' -ForegroundColor White; Write-Host '  4. 解决数据类型冲突' -ForegroundColor White; Write-Host '📋 修复计划:' -ForegroundColor Cyan; Write-Host '  - 重写BlueGradientColors主题系统' -ForegroundColor White; Write-Host '  - 修复所有@Composable组件导入' -ForegroundColor White; Write-Host '  - 重新实现TeachingPowerViewModel接口' -ForegroundColor White; Write-Host '  - 统一StudentGroup/StudentDevice数据模型' -ForegroundColor White; Write-Host '⏱️  预估时间: 3-5天全职工作' -ForegroundColor Magenta; Write-Host '💡 下一步: 开始逐个修复编译错误' -ForegroundColor Green"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "🚀 启动SSLAB设备模拟器服务器",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Write-Host '=== 🚀 启动SSLAB设备模拟器服务器 ===' -ForegroundColor Green; cd 'D:\\CODE\\SSLAB-HMI\\sslab-device-simulator'; Write-Host '🌐 启动Node.js服务器...' -ForegroundColor Cyan; npm start"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "🔍 检查源代码错误",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Write-Host '=== 🔍 检查源代码错误 ===' -ForegroundColor Yellow; Write-Host '📋 主要错误类型:' -ForegroundColor Cyan; Write-Host '  ❌ BlueGradientColors.属性 引用错误' -ForegroundColor Red; Write-Host '  ❌ Alignment.center 等组件引用错误' -ForegroundColor Red; Write-Host '  ❌ ViewModel函数签名不匹配' -ForegroundColor Red; Write-Host '  ❌ StudentGroup/StudentDevice类型冲突' -ForegroundColor Red; Write-Host '🎯 修复优先级:' -ForegroundColor Cyan; Write-Host '  1. 先修复主题系统 (BlueGradientColors)' -ForegroundColor White; Write-Host '  2. 再修夏组件导入 (Alignment.center)' -ForegroundColor White; Write-Host '  3. 然后修复ViewModel接口' -ForegroundColor White; Write-Host '  4. 最后统一数据模型' -ForegroundColor White; Write-Host '🔧 现在开始修复...' -ForegroundColor Green"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }

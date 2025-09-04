@@ -17,77 +17,77 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkBlue500,
-    onPrimary = Grey50,
-    primaryContainer = DarkBlue700,
-    onPrimaryContainer = LightBlue100,
+    primary = PrimaryBlue,
+    onPrimary = TextOnBlue,
+    primaryContainer = SecondaryBlue,
+    onPrimaryContainer = TextOnBlue,
     
-    secondary = LightBlue300,
-    onSecondary = DarkBlue900,
-    secondaryContainer = DarkBlue800,
-    onSecondaryContainer = LightBlue100,
+    secondary = LightBlue,
+    onSecondary = PrimaryBlue,
+    secondaryContainer = SecondaryBlue,
+    onSecondaryContainer = TextOnBlue,
     
-    tertiary = Orange500,
-    onTertiary = Grey50,
-    tertiaryContainer = Orange600,
-    onTertiaryContainer = Grey50,
+    tertiary = VeryLightBlue,
+    onTertiary = PrimaryBlue,
+    tertiaryContainer = LightBlue,
+    onTertiaryContainer = PrimaryBlue,
     
-    error = ErrorDark,
-    onError = Grey900,
-    errorContainer = Red500,
-    onErrorContainer = Grey50,
+    error = ErrorRed,
+    onError = TextOnBlue,
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
     
-    background = Grey900,
-    onBackground = Grey100,
+    background = BackgroundDark,
+    onBackground = TextOnBlue,
     surface = SurfaceDark,
-    onSurface = Grey100,
+    onSurface = TextOnBlue,
     
-    surfaceVariant = Grey800,
-    onSurfaceVariant = Grey300,
-    outline = Grey500,
-    outlineVariant = Grey700,
+    surfaceVariant = Color(0xFF49454E),
+    onSurfaceVariant = Color(0xFFCAC4D0),
+    outline = Color(0xFF938F99),
+    outlineVariant = Color(0xFF49454E),
     
-    scrim = Grey900,
-    inverseSurface = Grey100,
-    inverseOnSurface = Grey800,
-    inversePrimary = DarkBlue700
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFFE6E1E5),
+    inverseOnSurface = Color(0xFF313033),
+    inversePrimary = PrimaryBlue
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = DarkBlue700,
-    onPrimary = Grey50,
-    primaryContainer = LightBlue100,
-    onPrimaryContainer = DarkBlue900,
+    primary = PrimaryBlue,
+    onPrimary = TextOnBlue,
+    primaryContainer = VeryLightBlue,
+    onPrimaryContainer = PrimaryBlue,
     
-    secondary = DarkBlue600,
-    onSecondary = Grey50,
+    secondary = SecondaryBlue,
+    onSecondary = TextOnBlue,
     secondaryContainer = LightBlue50,
-    onSecondaryContainer = DarkBlue800,
+    onSecondaryContainer = PrimaryBlue,
     
-    tertiary = Orange500,
-    onTertiary = Grey50,
-    tertiaryContainer = Color(0xFFFFE0B2),
-    onTertiaryContainer = Color(0xFFE65100),
+    tertiary = LightBlue,
+    onTertiary = PrimaryBlue,
+    tertiaryContainer = Color(0xFFE3F2FD),
+    onTertiaryContainer = PrimaryBlue,
     
-    error = ErrorLight,
-    onError = Grey50,
+    error = ErrorRed,
+    onError = TextOnBlue,
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
     
-    background = Grey50,
-    onBackground = Grey900,
+    background = BackgroundLight,
+    onBackground = TextPrimary,
     surface = SurfaceLight,
-    onSurface = Grey900,
+    onSurface = TextPrimary,
     
-    surfaceVariant = Grey200,
-    onSurfaceVariant = Grey700,
-    outline = Grey500,
-    outlineVariant = Grey300,
+    surfaceVariant = Color(0xFFE7E0EC),
+    onSurfaceVariant = Color(0xFF49454E),
+    outline = Color(0xFF79747E),
+    outlineVariant = Color(0xFFCAC4D0),
     
-    scrim = Grey900,
-    inverseSurface = Grey800,
-    inverseOnSurface = Grey100,
-    inversePrimary = DarkBlue500
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFF313033),
+    inverseOnSurface = Color(0xFFF4EFF4),
+    inversePrimary = LightBlue
 )
 
 @Composable

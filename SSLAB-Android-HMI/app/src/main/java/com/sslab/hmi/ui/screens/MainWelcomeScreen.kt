@@ -1,7 +1,9 @@
 package com.sslab.hmi.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,10 +17,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cn.sslab.hmi.ui.theme.BlueGradientBrushes
+import com.cn.sslab.hmi.ui.theme.BlueGradientColors
 
 /**
  * 主欢迎屏幕 - 1280*800 横屏布局
- * 参考设计图的蓝色主题和卡片式布局
+ * 采用SSLAB专用蓝色渐变主题设计
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,18 +33,11 @@ fun MainWelcomeScreen(
     onNavigateToApiTest: () -> Unit,
     onNavigateToServerConnection: () -> Unit
 ) {
-    // 1280*800 横屏布局
+    // 1280*800 横屏布局，应用蓝色渐变背景
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        MaterialTheme.colorScheme.background
-                    )
-                )
-            )
+            .background(brush = BlueGradientBrushes.BackgroundVertical)
     ) {
         Row(
             modifier = Modifier
@@ -55,13 +52,19 @@ fun MainWelcomeScreen(
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 标题区域
+                // 标题区域 - 使用蓝色渐变卡片
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = BlueGradientBrushes.PrimaryHorizontal,
+                            shape = RoundedCornerShape(16.dp)
+                        ),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = Color.Transparent
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
@@ -73,65 +76,133 @@ fun MainWelcomeScreen(
                                 fontSize = 36.sp,
                                 fontWeight = FontWeight.Bold
                             ),
-                            color = MaterialTheme.colorScheme.onPrimary
+                            color = Color.White
                         )
                         Text(
                             text = "智能实验室控制系统",
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+                            color = Color.White.copy(alpha = 0.9f)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "HMI控制终端",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                            color = Color.White.copy(alpha = 0.8f)
                         )
                     }
                 }
 
-                // 系统状态卡片
+                // 系统状态卡片 - 使用白色背景提高对比度
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, BlueGradientColors.Primary.copy(alpha = 0.2f))
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = "系统状态",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                        // 标题区域
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "系统状态",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = BlueGradientColors.Primary
+                            )
+                            
+                            // 状态指示器
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(
+                                            BlueGradientColors.Green,
+                                            CircleShape
+                                        )
+                                )
+                                Text(
+                                    text = "全部正常",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = BlueGradientColors.Green,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        
+                        // 分隔线
+                        Divider(
+                            color = BlueGradientColors.Primary.copy(alpha = 0.1f),
+                            thickness = 1.dp
                         )
-                        StatusItem(
-                            icon = Icons.Default.Wifi,
-                            label = "网络连接",
-                            status = "已连接",
-                            statusColor = MaterialTheme.colorScheme.tertiary
-                        )
-                        StatusItem(
-                            icon = Icons.Default.DeviceHub,
-                            label = "设备发现",
-                            status = "运行中",
-                            statusColor = MaterialTheme.colorScheme.tertiary
-                        )
-                        StatusItem(
-                            icon = Icons.Default.Security,
-                            label = "系统安全",
-                            status = "正常",
-                            statusColor = MaterialTheme.colorScheme.tertiary
-                        )
+                        
+                        // 状态项目网格
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                StatusItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Wifi,
+                                    label = "网络连接",
+                                    status = "已连接",
+                                    statusColor = BlueGradientColors.Green
+                                )
+                                StatusItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.DeviceHub,
+                                    label = "设备发现",
+                                    status = "运行中",
+                                    statusColor = BlueGradientColors.Green
+                                )
+                            }
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                StatusItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Security,
+                                    label = "系统安全",
+                                    status = "正常",
+                                    statusColor = BlueGradientColors.Green
+                                )
+                                StatusItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Storage,
+                                    label = "数据同步",
+                                    status = "同步中",
+                                    statusColor = BlueGradientColors.Primary
+                                )
+                            }
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // 版本信息
+                // 版本信息 - 使用蓝色渐变背景
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                        containerColor = BlueGradientColors.SurfaceVariant
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -140,12 +211,12 @@ fun MainWelcomeScreen(
                         Text(
                             text = "版本 1.0.0",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = BlueGradientColors.PrimaryText
                         )
                         Text(
                             text = "© 2024 SSLAB",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            color = BlueGradientColors.TertiaryText
                         )
                     }
                 }
@@ -162,7 +233,8 @@ fun MainWelcomeScreen(
                     text = "功能导航",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    color = BlueGradientColors.PrimaryText
                 )
 
                 // 主要功能区域 - 2x2网格
@@ -174,7 +246,7 @@ fun MainWelcomeScreen(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // 设备管理
+                        // 设备管理 - 使用主蓝色渐变
                         FunctionCard(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -183,13 +255,13 @@ fun MainWelcomeScreen(
                             description = "设备发现、状态监控\n设备列表管理",
                             icon = Icons.Default.Devices,
                             gradientColors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                BlueGradientColors.DeepBlue,
+                                BlueGradientColors.MediumBlue
                             ),
                             onClick = onNavigateToDeviceList
                         )
 
-                        // 教学电源
+                        // 教学电源 - 使用辅助蓝色渐变
                         FunctionCard(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -198,8 +270,8 @@ fun MainWelcomeScreen(
                             description = "电源控制管理\n学生分组设置",
                             icon = Icons.Default.Power,
                             gradientColors = listOf(
-                                MaterialTheme.colorScheme.tertiary,
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
+                                BlueGradientColors.SkyBlue,
+                                BlueGradientColors.CyanBlue
                             ),
                             onClick = onNavigateToTeachingPower
                         )
@@ -209,7 +281,7 @@ fun MainWelcomeScreen(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // 教室配置
+                        // 教室配置 - 使用青绿色渐变
                         FunctionCard(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -218,13 +290,13 @@ fun MainWelcomeScreen(
                             description = "教室布局设置\n设备分组管理",
                             icon = Icons.Default.School,
                             gradientColors = listOf(
-                                Color(0xFF1976D2),
-                                Color(0xFF1976D2).copy(alpha = 0.8f)
+                                BlueGradientColors.TealGreen,
+                                BlueGradientColors.Green
                             ),
                             onClick = onNavigateToClassroomConfig
                         )
 
-                        // 系统工具
+                        // 系统工具 - 使用中性灰蓝色渐变
                         FunctionCard(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -233,43 +305,59 @@ fun MainWelcomeScreen(
                             description = "API测试工具\n服务器连接",
                             icon = Icons.Default.Settings,
                             gradientColors = listOf(
-                                Color(0xFF757575),
-                                Color(0xFF757575).copy(alpha = 0.8f)
+                                BlueGradientColors.MediumGray,
+                                BlueGradientColors.LightGray
                             ),
                             onClick = onNavigateToApiTest
                         )
                     }
                 }
 
-                // 底部快捷操作
+                // 底部快捷操作 - 使用蓝色渐变按钮
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
                         onClick = onNavigateToServerConnection,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = BlueGradientColors.MediumBlue
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, 
+                            BlueGradientColors.MediumBlue
+                        )
                     ) {
                         Icon(
                             imageVector = Icons.Default.Link,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
+                            tint = BlueGradientColors.MediumBlue
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("服务器连接")
+                        Text("服务器连接", color = BlueGradientColors.MediumBlue)
                     }
                     
                     OutlinedButton(
                         onClick = onNavigateToApiTest,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = BlueGradientColors.SkyBlue
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, 
+                            BlueGradientColors.SkyBlue
+                        )
                     ) {
                         Icon(
                             imageVector = Icons.Default.BugReport,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(18.dp),
+                            tint = BlueGradientColors.SkyBlue
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("API测试")
+                        Text("API测试", color = BlueGradientColors.SkyBlue)
                     }
                 }
             }
@@ -279,39 +367,61 @@ fun MainWelcomeScreen(
 
 @Composable
 private fun StatusItem(
+    modifier: Modifier = Modifier,
     icon: ImageVector,
     label: String,
     status: String,
     statusColor: Color
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = BlueGradientColors.Primary.copy(alpha = 0.05f)
+        ),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, BlueGradientColors.Primary.copy(alpha = 0.1f))
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                modifier = Modifier.size(18.dp)
-            )
+            // 图标区域
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        statusColor.copy(alpha = 0.1f),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = statusColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            
+            // 标签文本
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodySmall,
+                color = BlueGradientColors.Primary,
+                fontWeight = FontWeight.Medium
+            )
+            
+            // 状态文本
+            Text(
+                text = status,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = statusColor
             )
         }
-        
-        Text(
-            text = status,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.Medium
-            ),
-            color = statusColor
-        )
     }
 }
 
