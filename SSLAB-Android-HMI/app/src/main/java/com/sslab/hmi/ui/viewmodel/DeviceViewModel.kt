@@ -36,7 +36,7 @@ class DeviceViewModel @Inject constructor(
     val searchQuery = _searchQuery.asStateFlow()
     
     // 设备类型过滤器
-    private val _selectedDeviceType = MutableStateFlow<String?>(null)
+    private val _selectedDeviceType = MutableStateFlow<DeviceType?>(null)
     val selectedDeviceType = _selectedDeviceType.asStateFlow()
     
     // 过滤后的设备列表
@@ -50,7 +50,7 @@ class DeviceViewModel @Inject constructor(
                 device.name.contains(query, ignoreCase = true) ||
                 device.ipAddress.contains(query, ignoreCase = true)
             
-            val matchesType = type == null || device.type == type
+            val matchesType = type == null || device.type == type.apiValue
             
             matchesQuery && matchesType
         }
@@ -197,7 +197,7 @@ class DeviceViewModel @Inject constructor(
     /**
      * 设置设备类型过滤器
      */
-    fun setDeviceTypeFilter(deviceType: String?) {
+    fun setDeviceTypeFilter(deviceType: DeviceType?) {
         _selectedDeviceType.value = deviceType
     }
     

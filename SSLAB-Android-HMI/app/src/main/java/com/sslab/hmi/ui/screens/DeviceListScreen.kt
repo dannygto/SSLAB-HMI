@@ -157,7 +157,7 @@ fun DeviceListScreen(
         }
         
         // 错误消息显示
-        if (errorMessage.isNotEmpty()) {
+        if (!errorMessage.isNullOrEmpty()) {
             LaunchedEffect(errorMessage) {
                 // 显示错误消息
             }
@@ -358,8 +358,8 @@ private fun TopStatusBar(
 private fun SearchAndFilterBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    selectedDeviceType: String?,
-    onDeviceTypeChange: (String?) -> Unit
+    selectedDeviceType: DeviceType?,
+    onDeviceTypeChange: (DeviceType?) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -383,9 +383,7 @@ private fun SearchAndFilterBar(
             onExpandedChange = { expanded = !expanded }
         ) {
             OutlinedTextField(
-                value = selectedDeviceType?.let { type ->
-                    DeviceType.values().find { it.apiValue == type }?.displayName ?: type
-                } ?: "所有类型",
+                value = selectedDeviceType?.displayName ?: "所有类型",
                 onValueChange = { },
                 readOnly = true,
                 trailingIcon = { 
@@ -409,7 +407,7 @@ private fun SearchAndFilterBar(
                     DropdownMenuItem(
                         text = { Text(type.displayName) },
                         onClick = {
-                            onDeviceTypeChange(type.apiValue)
+                            onDeviceTypeChange(type)
                             expanded = false
                         }
                     )
