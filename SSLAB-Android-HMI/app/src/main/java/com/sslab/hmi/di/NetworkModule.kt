@@ -54,7 +54,7 @@ object NetworkModule {
     
     /**
      * 提供Retrofit实例
-     * 注意：这里使用动态BaseURL，实际使用时需要配置
+     * 配置为连接到SSLAB设备模拟器服务器
      */
     @Provides
     @Singleton
@@ -63,7 +63,7 @@ object NetworkModule {
         gson: Gson
     ): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://192.168.1.100:8080/") // 默认URL，可在运行时更改
+            .baseUrl("http://localhost:8080/") // SSLAB设备模拟器服务器地址
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
