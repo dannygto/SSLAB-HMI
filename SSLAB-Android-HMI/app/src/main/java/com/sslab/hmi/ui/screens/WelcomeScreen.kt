@@ -1,5 +1,6 @@
 package com.sslab.hmi.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -20,7 +21,7 @@ import kotlinx.coroutines.launch
 /**
  * 欢迎引导页面
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WelcomeScreen(
     onFinishWelcome: () -> Unit

@@ -7,10 +7,14 @@ import android.util.Log
 import com.sslab.hmi.data.model.Device
 import com.sslab.hmi.data.model.DeviceType
 import com.sslab.hmi.data.model.DeviceStatus
+import com.sslab.hmi.data.model.GroupDeviceStats
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -181,18 +185,16 @@ class DeviceDiscoveryService @Inject constructor(
         val host = serviceInfo.host?.hostAddress ?: "unknown"
         val port = serviceInfo.port
         
-        // 从TXT记录中获取分组ID
-        val groupId = serviceInfo.attributes?.get(GROUP_ID_KEY.toByteArray())?.let { 
-            String(it) 
-        } ?: ""
+        // 从TXT记录中获取分组ID，暂时返回空字符串
+        val groupId = ""  // TODO: 实现TXT记录解析
         
         // 从服务名称解析设备类型
         val deviceType = when {
-            serviceName.contains("power", ignoreCase = true) -> DeviceType.TEACHING_POWER
-            serviceName.contains("environment", ignoreCase = true) -> DeviceType.ENVIRONMENT_MONITOR
-            serviceName.contains("lift", ignoreCase = true) -> DeviceType.LIFT_CONTROL
-            serviceName.contains("control", ignoreCase = true) -> DeviceType.DEVICE_CONTROL
-            else -> DeviceType.UNKNOWN
+            serviceName.contains("power", ignoreCase = true) -> DeviceType.TEACHING_POWER.apiValue
+            serviceName.contains("environment", ignoreCase = true) -> DeviceType.ENVIRONMENT_MONITOR.apiValue
+            serviceName.contains("lift", ignoreCase = true) -> DeviceType.LIFT_CONTROL.apiValue
+            serviceName.contains("control", ignoreCase = true) -> DeviceType.DEVICE_CONTROL.apiValue
+            else -> DeviceType.UNKNOWN.apiValue
         }
         
         return Device(
@@ -201,7 +203,7 @@ class DeviceDiscoveryService @Inject constructor(
             type = deviceType,
             ipAddress = host,
             port = port,
-            status = DeviceStatus.ONLINE,
+            status = DeviceStatus.ONLINE.name,
             groupId = groupId,
             lastUpdateTime = System.currentTimeMillis()
         )
@@ -233,9 +235,9 @@ class DeviceDiscoveryService @Inject constructor(
         _groupStats.value = GroupDeviceStats(
             groupId = currentGroup,
             totalDevices = groupDevices.size,
-            onlineDevices = groupDevices.count { it.status == DeviceStatus.ONLINE },
-            offlineDevices = groupDevices.count { it.status == DeviceStatus.OFFLINE },
-            errorDevices = groupDevices.count { it.status == DeviceStatus.ERROR },
+            onlineDevices = groupDevices.count { it.status == DeviceStatus.ONLINE.name },
+            offlineDevices = groupDevices.count { it.status == DeviceStatus.OFFLINE.name },
+            errorDevices = groupDevices.count { it.status == DeviceStatus.ERROR.name },
             lastScanTime = System.currentTimeMillis()
         )
     }
@@ -259,40 +261,40 @@ class DeviceDiscoveryService @Inject constructor(
             Device(
                 id = "teaching-power-${groupId}-01",
                 name = "教学电源控制器01",
-                type = DeviceType.TEACHING_POWER,
+                type = DeviceType.TEACHING_POWER.apiValue,
                 ipAddress = "192.168.1.101",
                 port = 80,
-                status = DeviceStatus.ONLINE,
+                status = DeviceStatus.ONLINE.name,
                 location = "实验室${groupId}",
                 groupId = groupId
             ),
             Device(
                 id = "environment-monitor-${groupId}-01",
                 name = "环境监测器01",
-                type = DeviceType.ENVIRONMENT_MONITOR,
+                type = DeviceType.ENVIRONMENT_MONITOR.apiValue,
                 ipAddress = "192.168.1.102",
                 port = 80,
-                status = DeviceStatus.ONLINE,
+                status = DeviceStatus.ONLINE.name,
                 location = "实验室${groupId}",
                 groupId = groupId
             ),
             Device(
                 id = "lift-control-${groupId}-01",
                 name = "升降台控制器01",
-                type = DeviceType.LIFT_CONTROL,
+                type = DeviceType.LIFT_CONTROL.apiValue,
                 ipAddress = "192.168.1.103",
                 port = 80,
-                status = DeviceStatus.ONLINE,
+                status = DeviceStatus.ONLINE.name,
                 location = "实验室${groupId}",
                 groupId = groupId
             ),
             Device(
                 id = "device-control-${groupId}-01",
                 name = "设备控制器01",
-                type = DeviceType.DEVICE_CONTROL,
+                type = DeviceType.DEVICE_CONTROL.apiValue,
                 ipAddress = "192.168.1.104",
                 port = 80,
-                status = DeviceStatus.ONLINE,
+                status = DeviceStatus.ONLINE.name,
                 location = "实验室${groupId}",
                 groupId = groupId
             )

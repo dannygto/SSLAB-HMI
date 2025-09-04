@@ -70,7 +70,7 @@ fun DeviceCard(
                     
                     // 设备图标
                     DeviceTypeIcon(
-                        deviceType = device.type,
+                        deviceType = DeviceType.values().find { it.apiValue == device.type } ?: DeviceType.UNKNOWN,
                         isOnline = device.isOnline,
                         modifier = Modifier.size(40.dp)
                     )
@@ -84,7 +84,7 @@ fun DeviceCard(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = device.type.displayName,
+                            text = DeviceType.values().find { it.apiValue == device.type }?.displayName ?: "未知设备",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -161,10 +161,13 @@ private fun DeviceTypeIcon(
     val icon = when (deviceType) {
         DeviceType.ENVIRONMENT_MONITOR -> Icons.Default.Thermostat
         DeviceType.STUDENT_POWER_TERMINAL -> Icons.Default.PowerSettingsNew
+        DeviceType.TEACHING_POWER -> Icons.Default.Power
         DeviceType.ENVIRONMENT_CONTROLLER -> Icons.Default.AcUnit
-        DeviceType.CURTAIN_CONTROLLER -> Icons.Default.Blinds
+        DeviceType.CURTAIN_CONTROLLER -> Icons.Default.Window
         DeviceType.LIGHTING_CONTROLLER -> Icons.Default.Lightbulb
-        DeviceType.LIFT_CONTROLLER -> Icons.Default.Elevator
+        DeviceType.LIFT_CONTROL -> Icons.Default.Elevator
+        DeviceType.DEVICE_CONTROL -> Icons.Default.Settings
+        DeviceType.UNKNOWN -> Icons.Default.Help
     }
     
     val backgroundColor = if (isOnline) 
@@ -251,7 +254,7 @@ private fun DeviceInfoRow(device: Device) {
                 color = MaterialTheme.colorScheme.outline
             )
             Text(
-                text = formatLastSeen(device.lastSeen),
+                text = formatLastSeen(Date(device.lastSeen)),
                 style = MaterialTheme.typography.bodySmall
             )
         }

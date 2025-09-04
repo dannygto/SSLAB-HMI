@@ -22,6 +22,12 @@ interface DeviceApi {
     suspend fun getDevice(@Path("deviceId") deviceId: String): Response<Device>
     
     /**
+     * 添加新设备
+     */
+    @POST("api/devices")
+    suspend fun addDevice(@Body request: AddDeviceRequest): Response<ApiResponse<Device>>
+    
+    /**
      * 更新设备信息
      */
     @PUT("api/devices/{deviceId}")
@@ -35,6 +41,33 @@ interface DeviceApi {
      */
     @DELETE("api/devices/{deviceId}")
     suspend fun deleteDevice(@Path("deviceId") deviceId: String): Response<Unit>
+    
+    /**
+     * 发送设备控制命令
+     */
+    @POST("api/devices/{deviceId}/command")
+    suspend fun sendDeviceCommand(
+        @Path("deviceId") deviceId: String,
+        @Body command: DeviceCommand
+    ): Response<Map<String, Any>>
+    
+    /**
+     * 扫描设备
+     */
+    @POST("api/devices/scan")
+    suspend fun scanDevices(): Response<List<Device>>
+    
+    /**
+     * 获取环境数据
+     */
+    @GET("api/devices/{deviceId}/environment")
+    suspend fun getEnvironmentData(@Path("deviceId") deviceId: String): Response<EnvironmentData>
+    
+    /**
+     * 获取电源数据
+     */
+    @GET("api/devices/{deviceId}/power")
+    suspend fun getPowerData(@Path("deviceId") deviceId: String): Response<PowerControlData>
     
     /**
      * 设备心跳检测

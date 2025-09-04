@@ -77,4 +77,13 @@ object NetworkModule {
     fun provideSSLabApiService(retrofit: Retrofit): SSLabApiService {
         return retrofit.create(SSLabApiService::class.java)
     }
+
+    /**
+     * 提供教学电源API服务
+     */
+    @Provides
+    @Singleton
+    fun provideTeachingPowerApi(retrofit: Retrofit): com.sslab.hmi.data.api.TeachingPowerApi {
+        return retrofit.create(com.sslab.hmi.data.api.TeachingPowerApi::class.java)
+    }
 }

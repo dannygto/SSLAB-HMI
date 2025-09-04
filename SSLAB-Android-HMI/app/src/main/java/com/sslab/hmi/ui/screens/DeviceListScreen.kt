@@ -16,7 +16,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.sslab.hmi.data.model.Device
 import com.sslab.hmi.data.model.DeviceType
 import com.sslab.hmi.ui.components.DeviceCard
-import com.sslab.hmi.ui.components.SearchBar
 import com.sslab.hmi.ui.viewmodel.DeviceViewModel
 import kotlinx.coroutines.launch
 
@@ -60,7 +59,7 @@ fun DeviceListScreen(
         // 顶部状态栏
         TopStatusBar(
             isConnected = isConnected,
-            onlineDevices = devices.count { it.isOnline },
+            onlineDevices = devices.count { it.status == "ONLINE" },
             totalDevices = devices.size,
             onRefresh = { viewModel.refreshDevices() },
             onScan = { 
@@ -111,7 +110,7 @@ fun DeviceListScreen(
             
             errorMessage != null -> {
                 ErrorDisplay(
-                    message = errorMessage,
+                    message = errorMessage ?: "",
                     onRetry = { viewModel.refreshDevices() },
                     onDismiss = { viewModel.clearErrorMessage() }
                 )
@@ -243,8 +242,8 @@ private fun TopStatusBar(
 private fun SearchAndFilterBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    selectedDeviceType: DeviceType?,
-    onDeviceTypeChange: (DeviceType?) -> Unit
+    selectedDeviceType: String?,
+    onDeviceTypeChange: (String?) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -268,10 +267,14 @@ private fun SearchAndFilterBar(
             onExpandedChange = { expanded = !expanded }
         ) {
             OutlinedTextField(
-                value = selectedDeviceType?.displayName ?: "所有类型",
+                value = selectedDeviceType?.let { type ->
+                    DeviceType.values().find { it.apiValue == type }?.displayName ?: type
+                } ?: "所有类型",
                 onValueChange = { },
                 readOnly = true,
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                trailingIcon = { 
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) 
+                },
                 modifier = Modifier.menuAnchor()
             )
             
@@ -290,7 +293,7 @@ private fun SearchAndFilterBar(
                     DropdownMenuItem(
                         text = { Text(type.displayName) },
                         onClick = {
-                            onDeviceTypeChange(type)
+                            onDeviceTypeChange(type.apiValue)
                             expanded = false
                         }
                     )

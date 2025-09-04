@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sslab.hmi.data.model.ClassroomConfig
+import com.sslab.hmi.data.model.DeviceType
 import com.sslab.hmi.ui.viewmodel.ClassroomConfigViewModel
 
 /**
@@ -272,20 +273,26 @@ private fun DeviceItem(device: com.sslab.hmi.data.model.Device) {
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = "${device.type.displayName} | ${device.ipAddress}",
+                text = "${DeviceType.values().find { it.apiValue == device.type }?.displayName ?: "未知设备"} | ${device.ipAddress}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
         val statusColor = when (device.status) {
-            com.sslab.hmi.data.model.DeviceStatus.ONLINE -> MaterialTheme.colorScheme.primary
-            com.sslab.hmi.data.model.DeviceStatus.OFFLINE -> MaterialTheme.colorScheme.error
-            com.sslab.hmi.data.model.DeviceStatus.CONNECTING -> MaterialTheme.colorScheme.secondary
+            "ONLINE" -> MaterialTheme.colorScheme.primary
+            "OFFLINE" -> MaterialTheme.colorScheme.error
+            "CONNECTING" -> MaterialTheme.colorScheme.secondary
+            else -> MaterialTheme.colorScheme.outline
         }
         
         Text(
-            text = device.status.displayName,
+            text = when (device.status) {
+                "ONLINE" -> "在线"
+                "OFFLINE" -> "离线"  
+                "CONNECTING" -> "连接中"
+                else -> "未知"
+            },
             style = MaterialTheme.typography.bodySmall,
             color = statusColor
         )

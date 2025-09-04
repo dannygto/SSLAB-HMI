@@ -4,10 +4,14 @@ import android.util.Log
 import com.sslab.hmi.data.model.*
 import com.sslab.hmi.data.network.SSLabApiService
 import com.sslab.hmi.data.network.WebSocketService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,6 +28,9 @@ class DeviceRepository @Inject constructor(
         private const val TAG = "DeviceRepository"
         const val DEFAULT_SERVER_URL = "http://192.168.1.100:8080"
     }
+    
+    // 协程作用域
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     // 设备列表状态
     private val _devices = MutableStateFlow<List<Device>>(emptyList())
@@ -65,7 +72,9 @@ class DeviceRepository @Inject constructor(
     fun connectToServer() {
         Log.d(TAG, "Connecting to server: $serverUrl")
         webSocketService.connect(serverUrl)
-        loadDevices()
+        repositoryScope.launch {
+            loadDevices()
+        }
     }
     
     /**
@@ -88,8 +97,8 @@ class DeviceRepository @Inject constructor(
             val response = apiService.getDevices()
             if (response.isSuccessful) {
                 val apiResponse = response.body()
-                if (apiResponse?.success == true) {
-                    _devices.value = apiResponse.data ?: emptyList()
+                if (apiResponse?.success == true && apiResponse.data != null) {
+                    _devices.value = apiResponse.data
                     Log.d(TAG, "Loaded ${_devices.value.size} devices")
                 } else {
                     _errorMessage.value = apiResponse?.error ?: "Failed to load devices"
@@ -106,11 +115,40 @@ class DeviceRepository @Inject constructor(
     }
     
     /**
+     * 获取所有设备列表
+     */
+    suspend fun getAllDevices(): List<Device> {
+        return try {
+            val response = apiService.getDevices()
+            if (response.isSuccessful) {
+                val apiResponse = response.body()
+                if (apiResponse?.success == true && apiResponse.data != null) {
+                    apiResponse.data
+                } else {
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting all devices", e)
+            emptyList()
+        }
+    }
+    
+    /**
      * 添加新设备
      */
     suspend fun addDevice(device: Device): Result<Device> {
         return try {
-            val response = apiService.addDevice(device)
+            val request = AddDeviceRequest(
+                name = device.name,
+                type = device.type,
+                groupId = device.groupId.ifEmpty { null },
+                ipAddress = device.ipAddress.ifEmpty { null },
+                port = device.port
+            )
+            val response = apiService.addDevice(request)
             if (response.isSuccessful) {
                 val apiResponse = response.body()
                 if (apiResponse?.success == true && apiResponse.data != null) {
@@ -137,20 +175,15 @@ class DeviceRepository @Inject constructor(
         return try {
             val response = apiService.deleteDevice(deviceId)
             if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse?.success == true) {
-                    // 从本地列表中移除
-                    _devices.value = _devices.value.filter { it.id != deviceId }
-                    Log.d(TAG, "Deleted device: $deviceId")
-                    Result.success(Unit)
-                } else {
-                    Result.failure(Exception(apiResponse?.error ?: "Failed to delete device"))
-                }
+                // 从本地列表中移除
+                _devices.value = _devices.value.filter { it.id != deviceId }
+                Log.d(TAG, "Deleted device: $deviceId")
+                Result.success(Unit)
             } else {
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting device", e)
+            Log.e(TAG, "Error deleting device: $deviceId", e)
             Result.failure(e)
         }
     }
@@ -231,8 +264,8 @@ class DeviceRepository @Inject constructor(
             if (response.isSuccessful) {
                 val apiResponse = response.body()
                 if (apiResponse?.success == true && apiResponse.data != null) {
-                    Log.d(TAG, "Discovered ${apiResponse.data.devices.size} devices")
-                    Result.success(apiResponse.data.devices)
+                    Log.d(TAG, "Discovered ${apiResponse.data.size} devices")
+                    Result.success(apiResponse.data)
                 } else {
                     Result.failure(Exception(apiResponse?.error ?: "Failed to scan devices"))
                 }

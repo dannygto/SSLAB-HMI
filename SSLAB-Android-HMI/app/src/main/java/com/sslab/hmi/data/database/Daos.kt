@@ -50,6 +50,9 @@ interface TeachingPowerDao {
     @Query("SELECT * FROM teaching_power WHERE deviceId = :deviceId")
     suspend fun getTeachingPower(deviceId: String): TeachingPower?
     
+    @Query("SELECT * FROM teaching_power WHERE deviceId = :deviceId")
+    fun getTeachingPowerByDevice(deviceId: String): Flow<TeachingPower?>
+    
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTeachingPower(teachingPower: TeachingPower)
     
@@ -68,6 +71,9 @@ interface StudentPowerGroupDao {
     
     @Query("SELECT * FROM student_power_groups ORDER BY groupName")
     fun getAllGroups(): Flow<List<StudentPowerGroup>>
+    
+    @Query("SELECT * FROM student_power_groups ORDER BY groupName")
+    suspend fun getAllGroupsSync(): List<StudentPowerGroup>
     
     @Query("SELECT * FROM student_power_groups WHERE groupId = :groupId")
     suspend fun getGroup(groupId: String): StudentPowerGroup?

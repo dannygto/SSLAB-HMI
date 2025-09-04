@@ -21,7 +21,8 @@ class TeachingPowerRepository @Inject constructor(
     private val teachingPowerDao: TeachingPowerDao,
     private val studentPowerGroupDao: StudentPowerGroupDao,
     private val studentDeviceDao: StudentDeviceDao,
-    private val webSocketService: WebSocketService
+    private val webSocketService: WebSocketService,
+    private val deviceRepository: DeviceRepository
 ) {
     
     companion object {
@@ -32,13 +33,36 @@ class TeachingPowerRepository @Inject constructor(
      * 获取教学电源状态
      */
     fun getTeachingPowerStatus(deviceId: String): Flow<TeachingPower?> {
-        return teachingPowerDao.getAllTeachingPower()
+        return teachingPowerDao.getTeachingPowerByDevice(deviceId)
+    }
+    
+    /**
+     * 获取所有设备列表
+     */
+    suspend fun getDevices(): List<Device> {
+        return deviceRepository.getAllDevices()
     }
     
     /**
      * 获取学生电源组列表
      */
-    fun getStudentGroups(): Flow<List<StudentPowerGroup>> {
+    suspend fun getStudentGroups(): List<StudentGroup> {
+        // 将StudentPowerGroup转换为StudentGroup
+        val powerGroups = studentPowerGroupDao.getAllGroupsSync()
+        return powerGroups.map { powerGroup ->
+            StudentGroup(
+                id = powerGroup.groupId,
+                name = powerGroup.groupName,
+                deviceIds = emptyList(), // StudentPowerGroup没有deviceIds，使用空列表
+                isPowerOn = powerGroup.enabledCount > 0
+            )
+        }
+    }
+    
+    /**
+     * 获取学生电源组列表（Flow版本）
+     */
+    fun getStudentGroupsFlow(): Flow<List<StudentPowerGroup>> {
         return studentPowerGroupDao.getAllGroups()
     }
     
@@ -131,6 +155,28 @@ class TeachingPowerRepository @Inject constructor(
     }
     
     /**
+     * 控制所有设备电源（批量操作）
+     */
+    suspend fun controlAllDevicesPower(request: PowerControlRequest): Result<Unit> {
+        return try {
+            // 这里应该调用批量控制的API端点
+            // 暂时循环调用单个设备控制
+            for (deviceId in request.deviceIds) {
+                val command = PowerControlCommand(
+                    deviceId = deviceId,
+                    command = if (request.action == "on") PowerCommand.ENABLE_LOW_VOLTAGE else PowerCommand.DISABLE_LOW_VOLTAGE,
+                    value = request.action
+                )
+                controlTeachingPower(deviceId, command)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error controlling all devices power", e)
+            Result.failure(e)
+        }
+    }
+    
+    /**
      * 控制学生组电源
      */
     suspend fun controlStudentGroupPower(groupId: String, command: PowerControlCommand): Result<Unit> {
@@ -141,7 +187,7 @@ class TeachingPowerRepository @Inject constructor(
                 val enabled = when (command.command) {
                     PowerCommand.ENABLE_LOW_VOLTAGE -> true
                     PowerCommand.DISABLE_LOW_VOLTAGE -> false
-                    else -> return@try Result.success(Unit)
+                    else -> return Result.success(Unit)
                 }
                 studentDeviceDao.updateGroupPowerStatus(groupId, enabled, System.currentTimeMillis())
                 

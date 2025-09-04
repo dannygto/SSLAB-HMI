@@ -179,6 +179,33 @@ interface SSLabApiService {
         @Path("groupId") groupId: String,
         @Body command: DeviceCommand
     ): Response<ApiResponse<GroupControlResult>>
+    
+    /**
+     * 发送设备控制命令
+     */
+    @POST("api/devices/{deviceId}/command")
+    suspend fun sendDeviceCommand(
+        @Path("deviceId") deviceId: String,
+        @Body command: DeviceCommand
+    ): Response<ApiResponse<Map<String, Any>>>
+    
+    /**
+     * 扫描设备
+     */
+    @POST("api/devices/scan")
+    suspend fun scanDevices(): Response<ApiResponse<List<Device>>>
+    
+    /**
+     * 获取环境数据
+     */
+    @GET("api/devices/{deviceId}/environment")
+    suspend fun getEnvironmentData(@Path("deviceId") deviceId: String): Response<ApiResponse<EnvironmentData>>
+    
+    /**
+     * 获取电源数据
+     */
+    @GET("api/devices/{deviceId}/power")
+    suspend fun getPowerData(@Path("deviceId") deviceId: String): Response<ApiResponse<PowerControlData>>
 }
 
 /**

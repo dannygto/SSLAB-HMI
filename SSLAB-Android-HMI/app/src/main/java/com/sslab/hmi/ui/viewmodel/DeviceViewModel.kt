@@ -20,23 +20,23 @@ class DeviceViewModel @Inject constructor(
 ) : ViewModel() {
     
     // 设备列表
-    val devices = deviceRepository.devices.asStateFlow()
+    val devices = deviceRepository.devices
     
     // 加载状态
-    val isLoading = deviceRepository.isLoading.asStateFlow()
+    val isLoading = deviceRepository.isLoading
     
     // 连接状态
-    val isConnected = deviceRepository.isConnected.asStateFlow()
+    val isConnected = deviceRepository.isConnected
     
     // 错误消息
-    val errorMessage = deviceRepository.errorMessage.asStateFlow()
+    val errorMessage = deviceRepository.errorMessage
     
     // 搜索过滤器
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
     
     // 设备类型过滤器
-    private val _selectedDeviceType = MutableStateFlow<DeviceType?>(null)
+    private val _selectedDeviceType = MutableStateFlow<String?>(null)
     val selectedDeviceType = _selectedDeviceType.asStateFlow()
     
     // 过滤后的设备列表
@@ -197,7 +197,7 @@ class DeviceViewModel @Inject constructor(
     /**
      * 设置设备类型过滤器
      */
-    fun setDeviceTypeFilter(deviceType: DeviceType?) {
+    fun setDeviceTypeFilter(deviceType: String?) {
         _selectedDeviceType.value = deviceType
     }
     
@@ -248,7 +248,7 @@ class DeviceViewModel @Inject constructor(
     /**
      * 获取特定类型的设备
      */
-    fun getDevicesByType(deviceType: DeviceType): List<Device> {
+    fun getDevicesByType(deviceType: String): List<Device> {
         return devices.value.filter { it.type == deviceType }
     }
     
@@ -256,7 +256,7 @@ class DeviceViewModel @Inject constructor(
      * 获取在线设备数量
      */
     fun getOnlineDeviceCount(): Int {
-        return devices.value.count { it.isOnline }
+        return devices.value.count { it.status == "ONLINE" }
     }
     
     /**

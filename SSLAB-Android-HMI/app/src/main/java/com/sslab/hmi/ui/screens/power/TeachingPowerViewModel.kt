@@ -2,335 +2,274 @@ package com.sslab.hmi.ui.screens.power
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sslab.hmi.data.model.*
+import com.sslab.hmi.data.model.Device
+import com.sslab.hmi.data.model.PowerControlCommand
+import com.sslab.hmi.data.model.PowerControlRequest
+import com.sslab.hmi.data.model.PowerCommand
+import com.sslab.hmi.data.model.StudentGroup
+import com.sslab.hmi.data.model.StudentPowerGroup
+import com.sslab.hmi.data.model.StudentDevice
 import com.sslab.hmi.data.repository.TeachingPowerRepository
-import com.sslab.hmi.data.websocket.WebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class TeachingPowerViewModel @Inject constructor(
-    private val teachingPowerRepository: TeachingPowerRepository,
-    private val webSocketService: WebSocketService
+    private val repository: TeachingPowerRepository
 ) : ViewModel() {
-    
-    companion object {
-        private const val TEACHING_POWER_DEVICE_ID = "teaching-power-01"
-    }
-    
-    // UI状态
+
     private val _uiState = MutableStateFlow(TeachingPowerUiState())
     val uiState: StateFlow<TeachingPowerUiState> = _uiState.asStateFlow()
-    
-    // 教学电源状态
-    val teachingPowerStatus = teachingPowerRepository.getTeachingPowerStatus(TEACHING_POWER_DEVICE_ID)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
-    
-    // 学生电源组
-    val studentGroups = teachingPowerRepository.getStudentGroups()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-    
-    // 学生设备（当前选中组）
-    private val _selectedGroupId = MutableStateFlow("group-1")
+
+    // 额外的StateFlow属性用于UI绑定
+    private val _teachingPowerStatus = MutableStateFlow(TeachingPowerStatus())
+    val teachingPowerStatus: StateFlow<TeachingPowerStatus> = _teachingPowerStatus.asStateFlow()
+
+    private val _studentGroups = MutableStateFlow<List<StudentPowerGroup>>(emptyList())
+    val studentGroups: StateFlow<List<StudentPowerGroup>> = _studentGroups.asStateFlow()
+
+    private val _studentDevices = MutableStateFlow<List<StudentDevice>>(emptyList())
+    val studentDevices: StateFlow<List<StudentDevice>> = _studentDevices.asStateFlow()
+
+    private val _selectedGroupId = MutableStateFlow<String>("")
     val selectedGroupId: StateFlow<String> = _selectedGroupId.asStateFlow()
-    
-    val studentDevices = selectedGroupId.flatMapLatest { groupId ->
-        teachingPowerRepository.getStudentDevices(groupId)
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
-    
+
     init {
-        initializeData()
-        observeWebSocketUpdates()
+        loadDevices()
+        loadStudentGroups()
     }
-    
-    /**
-     * 初始化数据
-     */
-    private fun initializeData() {
+
+    private fun loadDevices() {
         viewModelScope.launch {
-            // 初始化模拟数据
-            teachingPowerRepository.initializeSimulatedData()
-            
-            // 刷新数据
-            refreshAllData()
-            
-            // 连接WebSocket
-            webSocketService.connect()
-        }
-    }
-    
-    /**
-     * 监听WebSocket更新
-     */
-    private fun observeWebSocketUpdates() {
-        viewModelScope.launch {
-            webSocketService.teachingPowerUpdates.collect { powerData ->
-                // WebSocket数据会自动更新到数据库，这里可以处理UI特定逻辑
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val devices = repository.getDevices()
+                _uiState.value = _uiState.value.copy(
+                    devices = devices,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message
+                )
             }
         }
     }
-    
-    /**
-     * 刷新所有数据
-     */
-    fun refreshAllData() {
+
+    private fun loadStudentGroups() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            
             try {
-                // 刷新教学电源数据
-                teachingPowerRepository.refreshTeachingPowerData(TEACHING_POWER_DEVICE_ID)
+                val groups = repository.getStudentGroups()
+                _uiState.value = _uiState.value.copy(studentGroups = groups)
+                // 转换为StudentPowerGroup类型
+                val powerGroups = groups.map { group ->
+                    convertToStudentPowerGroup(group)
+                }
+                _studentGroups.value = powerGroups
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
+        }
+    }
+
+    private fun convertToStudentPowerGroup(group: StudentGroup): StudentPowerGroup {
+        return StudentPowerGroup(
+            groupId = group.id,
+            groupName = group.name,
+            deviceCount = group.deviceIds.size,
+            enabledCount = if (group.isPowerOn) group.deviceIds.size else 0,
+            totalPower = 0f, // 实际应用中需要计算
+            avgVoltage = 0f, // 实际应用中需要计算
+            avgCurrent = 0f  // 实际应用中需要计算
+        )
+    }
+
+    private fun convertToStudentDevice(device: Device): StudentDevice {
+        return StudentDevice(
+            deviceId = device.id,
+            groupId = device.groupId,
+            studentName = "", // 实际应用中需要从其他源获取
+            seatNumber = "", // 实际应用中需要从其他源获取
+            enabled = device.isOnline,
+            voltage = 0f, // 实际应用中需要从设备状态获取
+            current = 0f, // 实际应用中需要从设备状态获取
+            power = 0f   // 实际应用中需要计算
+        )
+    }
+
+    fun toggleAllDevicesPower() {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val newState = !_uiState.value.allDevicesOn
+                val request = PowerControlRequest(
+                    deviceIds = _uiState.value.devices.map { it.id },
+                    action = if (newState) "on" else "off"
+                )
+                repository.controlAllDevicesPower(request)
                 
-                // 刷新学生组数据
-                teachingPowerRepository.refreshStudentGroups()
+                _uiState.value = _uiState.value.copy(
+                    allDevicesOn = newState,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message
+                )
+            }
+        }
+    }
+
+    fun toggleStudentGroupPower(groupId: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val currentGroups = _uiState.value.studentGroups.toMutableList()
+                val groupIndex = currentGroups.indexOfFirst { it.id == groupId }
                 
-                // 刷新当前选中组的学生设备
-                teachingPowerRepository.refreshStudentDevices(_selectedGroupId.value)
-                
+                if (groupIndex != -1) {
+                    val group = currentGroups[groupIndex]
+                    val newPowerState = !group.isPowerOn
+                    
+                    val command = PowerControlCommand(
+                        deviceId = groupId,
+                        command = if (newPowerState) PowerCommand.ENABLE_LOW_VOLTAGE else PowerCommand.DISABLE_LOW_VOLTAGE,
+                        value = if (newPowerState) "on" else "off"
+                    )
+                    repository.controlStudentGroupPower(groupId, command)
+                    
+                    currentGroups[groupIndex] = group.copy(isPowerOn = newPowerState)
+                    _uiState.value = _uiState.value.copy(
+                        studentGroups = currentGroups,
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message
+                )
+            }
+        }
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun refresh() {
+        loadDevices()
+        loadStudentGroups()
+    }
+
+    // 新增的方法用于UI绑定
+    fun setLowVoltageValue(value: Float) {
+        _teachingPowerStatus.value = _teachingPowerStatus.value.copy(lowVoltageValue = value)
+    }
+
+    fun toggleLowVoltage() {
+        val current = _teachingPowerStatus.value
+        _teachingPowerStatus.value = current.copy(lowVoltageEnabled = !current.lowVoltageEnabled)
+    }
+
+    fun setHighVoltageValue(value: Float) {
+        _teachingPowerStatus.value = _teachingPowerStatus.value.copy(highVoltageValue = value)
+    }
+
+    fun toggleHighVoltage() {
+        val current = _teachingPowerStatus.value
+        _teachingPowerStatus.value = current.copy(highVoltageEnabled = !current.highVoltageEnabled)
+    }
+
+    fun selectGroup(groupId: String) {
+        _selectedGroupId.value = groupId
+        // 根据选择的分组更新学生设备列表
+        val groupDevices = _uiState.value.devices.filter { device ->
+            device.groupId == groupId
+        }
+        // 转换为StudentDevice类型
+        val studentDevices = groupDevices.map { device ->
+            convertToStudentDevice(device)
+        }
+        _studentDevices.value = studentDevices
+    }
+
+    fun toggleGroupPower(groupId: String) {
+        toggleStudentGroupPower(groupId)
+    }
+
+    fun toggleStudentDevice(deviceId: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val device = _uiState.value.devices.find { it.id == deviceId }
+                if (device != null) {
+                    val newState = !device.isOnline
+                    val request = PowerControlRequest(
+                        deviceIds = listOf(deviceId),
+                        action = if (newState) "on" else "off"
+                    )
+                    repository.controlAllDevicesPower(request)
+                }
                 _uiState.value = _uiState.value.copy(isLoading = false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = e.message ?: "刷新数据失败"
+                    error = e.message
                 )
             }
         }
     }
-    
-    /**
-     * 切换低压电源
-     */
-    fun toggleLowVoltage() {
-        viewModelScope.launch {
-            val command = if (teachingPowerStatus.value?.lowVoltageEnabled == true) {
-                PowerControlCommand(TEACHING_POWER_DEVICE_ID, PowerCommand.DISABLE_LOW_VOLTAGE)
-            } else {
-                PowerControlCommand(TEACHING_POWER_DEVICE_ID, PowerCommand.ENABLE_LOW_VOLTAGE)
-            }
-            
-            val result = teachingPowerRepository.controlTeachingPower(TEACHING_POWER_DEVICE_ID, command)
-            if (result.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    error = result.exceptionOrNull()?.message ?: "控制失败"
-                )
-            }
-        }
-    }
-    
-    /**
-     * 设置低压电压值
-     */
-    fun setLowVoltageValue(value: Float) {
-        viewModelScope.launch {
-            val command = PowerControlCommand(TEACHING_POWER_DEVICE_ID, PowerCommand.SET_VOLTAGE, value)
-            val result = teachingPowerRepository.controlTeachingPower(TEACHING_POWER_DEVICE_ID, command)
-            if (result.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    error = result.exceptionOrNull()?.message ?: "设置电压失败"
-                )
-            }
-        }
-    }
-    
-    /**
-     * 切换高压电源
-     */
-    fun toggleHighVoltage() {
-        viewModelScope.launch {
-            val command = if (teachingPowerStatus.value?.highVoltageEnabled == true) {
-                PowerControlCommand(TEACHING_POWER_DEVICE_ID, PowerCommand.DISABLE_HIGH_VOLTAGE)
-            } else {
-                PowerControlCommand(TEACHING_POWER_DEVICE_ID, PowerCommand.ENABLE_HIGH_VOLTAGE)
-            }
-            
-            val result = teachingPowerRepository.controlTeachingPower(TEACHING_POWER_DEVICE_ID, command)
-            if (result.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    error = result.exceptionOrNull()?.message ?: "控制失败"
-                )
-            }
-        }
-    }
-    
-    /**
-     * 设置高压电压值
-     */
-    fun setHighVoltageValue(value: Float) {
-        viewModelScope.launch {
-            val command = PowerControlCommand(TEACHING_POWER_DEVICE_ID, PowerCommand.SET_VOLTAGE, value)
-            val result = teachingPowerRepository.controlTeachingPower(TEACHING_POWER_DEVICE_ID, command)
-            if (result.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    error = result.exceptionOrNull()?.message ?: "设置电压失败"
-                )
-            }
-        }
-    }
-    
-    /**
-     * 切换学生组电源
-     */
-    fun toggleGroupPower(groupId: String) {
-        viewModelScope.launch {
-            val group = studentGroups.value.find { it.groupId == groupId }
-            val command = if (group?.enabledCount ?: 0 > 0) {
-                PowerControlCommand(groupId, PowerCommand.DISABLE_LOW_VOLTAGE)
-            } else {
-                PowerControlCommand(groupId, PowerCommand.ENABLE_LOW_VOLTAGE)
-            }
-            
-            val result = teachingPowerRepository.controlStudentGroupPower(groupId, command)
-            if (result.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    error = result.exceptionOrNull()?.message ?: "控制学生组失败"
-                )
-            }
-        }
-    }
-    
-    /**
-     * 控制单个学生设备
-     */
-    fun toggleStudentDevice(deviceId: String) {
-        viewModelScope.launch {
-            val device = studentDevices.value.find { it.deviceId == deviceId }
-            val command = if (device?.enabled == true) {
-                PowerControlCommand(deviceId, PowerCommand.DISABLE_LOW_VOLTAGE)
-            } else {
-                PowerControlCommand(deviceId, PowerCommand.ENABLE_LOW_VOLTAGE)
-            }
-            
-            val result = teachingPowerRepository.controlStudentDevice(deviceId, command)
-            if (result.isFailure) {
-                _uiState.value = _uiState.value.copy(
-                    error = result.exceptionOrNull()?.message ?: "控制学生设备失败"
-                )
-            }
-        }
-    }
-    
-    /**
-     * 选择学生组
-     */
-    fun selectGroup(groupId: String) {
-        _selectedGroupId.value = groupId
-        viewModelScope.launch {
-            teachingPowerRepository.refreshStudentDevices(groupId)
-        }
-    }
-    
-    /**
-     * 紧急停止所有电源
-     */
+
     fun emergencyStop() {
         viewModelScope.launch {
-            val command = PowerControlCommand(TEACHING_POWER_DEVICE_ID, PowerCommand.EMERGENCY_STOP)
-            teachingPowerRepository.controlTeachingPower(TEACHING_POWER_DEVICE_ID, command)
-            
-            // 停止所有学生组电源
-            studentGroups.value.forEach { group ->
-                val groupCommand = PowerControlCommand(group.groupId, PowerCommand.EMERGENCY_STOP)
-                teachingPowerRepository.controlStudentGroupPower(group.groupId, groupCommand)
+            try {
+                _teachingPowerStatus.value = _teachingPowerStatus.value.copy(emergencyStopActive = true)
+                _uiState.value = _uiState.value.copy(isLoading = true)
+                val request = PowerControlRequest(
+                    deviceIds = _uiState.value.devices.map { it.id },
+                    action = "emergency_stop"
+                )
+                repository.controlAllDevicesPower(request)
+                _uiState.value = _uiState.value.copy(
+                    allDevicesOn = false,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message
+                )
             }
         }
     }
-    
-    /**
-     * 清除错误
-     */
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
-    
-    override fun onCleared() {
-        super.onCleared()
-        webSocketService.disconnect()
-    }
-}
-    
-    fun toggleMode() {
-        _uiState.value = _uiState.value.copy(isDCMode = !_uiState.value.isDCMode)
-    }
-    
-    fun toggleHighVoltage() {
-        _uiState.value = _uiState.value.copy(isHighVoltageEnabled = !_uiState.value.isHighVoltageEnabled)
-    }
-    
-    fun toggleHighCurrent() {
-        _uiState.value = _uiState.value.copy(isHighCurrentEnabled = !_uiState.value.isHighCurrentEnabled)
-    }
-    
-    fun toggleSocket() {
-        _uiState.value = _uiState.value.copy(isSocketEnabled = !_uiState.value.isSocketEnabled)
-    }
-    
-    fun updateHighVoltageDuration(duration: String) {
-        _uiState.value = _uiState.value.copy(highVoltageDuration = duration)
-    }
-    
-    fun updateHighCurrentDuration(duration: String) {
-        _uiState.value = _uiState.value.copy(highCurrentDuration = duration)
-    }
-    
-    fun toggleSync() {
-        _uiState.value = _uiState.value.copy(isSyncEnabled = !_uiState.value.isSyncEnabled)
-    }
-    
-    fun toggleStudentGroup(group: String) {
-        val currentGroups = _uiState.value.studentGroups.toMutableMap()
-        currentGroups[group] = !(currentGroups[group] ?: false)
-        _uiState.value = _uiState.value.copy(studentGroups = currentGroups)
-    }
-    
-    fun syncParametersToStudents() {
-        viewModelScope.launch {
-            // TODO: 实现参数同步逻辑
-            // 1. 收集当前电源参数
-            // 2. 发送到所有启用的学生组设备
-            // 3. 更新最后同步时间
-            val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-            _uiState.value = _uiState.value.copy(lastSyncTime = currentTime)
-        }
+
+    fun refreshAllData() {
+        refresh()
     }
 }
 
 data class TeachingPowerUiState(
-    // 低压电源状态
-    val realTimeVoltage: Float = 12.5f,
-    val outputVoltage: String = "15",
-    val realTimeCurrent: Float = 2.0f,
-    val currentLimit: String = "2.5",
-    val isOutputEnabled: Boolean = true,
-    val isDCMode: Boolean = true,
-    
-    // 高压电源状态
-    val highVoltageRange: String = "240V-300V",
-    val isHighVoltageEnabled: Boolean = false,
-    val highVoltageDuration: String = "10",
-    val isHighCurrentEnabled: Boolean = false,
-    val highCurrentDuration: String = "10",
-    val isSocketEnabled: Boolean = false,
-    
-    // 学生电源控制
-    val isSyncEnabled: Boolean = true,
-/**
- * 教学电源UI状态
- */
-data class TeachingPowerUiState(
+    val devices: List<Device> = emptyList(),
+    val studentGroups: List<StudentGroup> = emptyList(),
+    val allDevicesOn: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null
+)
+
+data class TeachingPowerStatus(
+    val lowVoltageEnabled: Boolean = false,
+    val lowVoltageValue: Float = 0f,
+    val highVoltageEnabled: Boolean = false,
+    val highVoltageValue: Float = 0f,
+    val emergencyStopActive: Boolean = false,
+    val dcVoltage: Float = 0f,
+    val current: Float = 0f,
+    val acVoltage: Float = 220f
 )

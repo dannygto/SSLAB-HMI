@@ -16,8 +16,8 @@ object ClassroomModule {
     
     @Provides
     @Singleton
-    fun provideDeviceDiscoveryService(): DeviceDiscoveryService {
-        return DeviceDiscoveryService()
+    fun provideDeviceDiscoveryService(@ApplicationContext context: Context): DeviceDiscoveryService {
+        return DeviceDiscoveryService(context)
     }
     
     @Provides

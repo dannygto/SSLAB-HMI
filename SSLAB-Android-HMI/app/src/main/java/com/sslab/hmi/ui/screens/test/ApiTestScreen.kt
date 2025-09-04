@@ -77,6 +77,7 @@ fun ApiTestScreen(
             }
             
             is ApiTestUiState.Error -> {
+                val errorState = uiState as ApiTestUiState.Error
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -93,7 +94,7 @@ fun ApiTestScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = uiState.message,
+                            text = errorState.message,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -102,6 +103,7 @@ fun ApiTestScreen(
             }
             
             is ApiTestUiState.Success -> {
+                val successState = uiState as ApiTestUiState.Success
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -118,7 +120,7 @@ fun ApiTestScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = uiState.data,
+                            text = successState.data,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -127,8 +129,9 @@ fun ApiTestScreen(
             }
             
             is ApiTestUiState.DeviceList -> {
+                val deviceListState = uiState as ApiTestUiState.DeviceList
                 Text(
-                    text = "设备列表 (${uiState.devices.size} 个设备)",
+                    text = "设备列表 (${deviceListState.devices.size} 个设备)",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -136,7 +139,7 @@ fun ApiTestScreen(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(uiState.devices) { device ->
+                    items(deviceListState.devices) { device ->
                         DeviceItem(device = device)
                     }
                 }
@@ -211,12 +214,12 @@ private fun DeviceItem(
                     style = MaterialTheme.typography.titleSmall
                 )
                 Badge {
-                    Text(text = device.status.name)
+                    Text(text = device.status)
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "类型: ${device.type.displayName}",
+                text = "类型: ${device.displayName}",
                 style = MaterialTheme.typography.bodySmall
             )
             Text(

@@ -151,7 +151,7 @@ private fun DeviceBasicInfoCard(device: Device) {
             Spacer(modifier = Modifier.height(16.dp))
             
             DeviceInfoRow("设备名称", device.name)
-            DeviceInfoRow("设备类型", device.type.displayName)
+            DeviceInfoRow("设备类型", DeviceType.values().find { it.apiValue == device.type }?.displayName ?: "未知设备")
             DeviceInfoRow("设备ID", device.id)
             DeviceInfoRow("IP地址", device.ipAddress)
             DeviceInfoRow("端口", device.port.toString())
@@ -281,11 +281,15 @@ private fun DeviceControlCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             // 根据设备类型显示不同的控制选项
-            when (device.type) {
+            val deviceTypeEnum = DeviceType.values().find { it.apiValue == device.type }
+            when (deviceTypeEnum) {
                 DeviceType.ENVIRONMENT_MONITOR -> {
                     EnvironmentMonitorControls(onSendCommand)
                 }
                 DeviceType.STUDENT_POWER_TERMINAL -> {
+                    PowerTerminalControls(onSendCommand)
+                }
+                DeviceType.TEACHING_POWER -> {
                     PowerTerminalControls(onSendCommand)
                 }
                 DeviceType.ENVIRONMENT_CONTROLLER -> {
@@ -297,8 +301,14 @@ private fun DeviceControlCard(
                 DeviceType.LIGHTING_CONTROLLER -> {
                     LightingControllerControls(onSendCommand)
                 }
-                DeviceType.LIFT_CONTROLLER -> {
+                DeviceType.LIFT_CONTROL -> {
                     LiftControllerControls(onSendCommand)
+                }
+                DeviceType.DEVICE_CONTROL -> {
+                    Text("设备控制功能")
+                }
+                else -> {
+                    Text("此设备类型暂不支持控制")
                 }
             }
         }

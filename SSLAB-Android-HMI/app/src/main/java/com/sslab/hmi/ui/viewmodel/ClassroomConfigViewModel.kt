@@ -8,6 +8,7 @@ import com.sslab.hmi.data.model.Device
 import com.sslab.hmi.data.model.DeviceDiscoveryConfig
 import com.sslab.hmi.data.model.GroupDeviceStats
 import com.sslab.hmi.data.repository.ClassroomConfigRepository
+import com.sslab.hmi.data.repository.DeviceRepository
 import com.sslab.hmi.data.discovery.DeviceDiscoveryService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -20,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ClassroomConfigViewModel @Inject constructor(
     private val classroomConfigRepository: ClassroomConfigRepository,
-    private val deviceDiscoveryService: DeviceDiscoveryService
+    private val deviceDiscoveryService: DeviceDiscoveryService,
+    private val deviceRepository: DeviceRepository
 ) : ViewModel() {
     
     companion object {
@@ -31,8 +33,8 @@ class ClassroomConfigViewModel @Inject constructor(
     data class UiState(
         val currentConfig: ClassroomConfig = ClassroomConfig(),
         val isConfigured: Boolean = false,
-        val discoveryConfig: DeviceDiscoveryConfig = DeviceDiscoveryConfig(""),
-        val groupStats: GroupDeviceStats = GroupDeviceStats(),
+        val discoveryConfig: DeviceDiscoveryConfig = DeviceDiscoveryConfig(groupId = ""),
+        val groupStats: GroupDeviceStats = GroupDeviceStats(groupId = ""),
         val groupDevices: List<Device> = emptyList(),
         val isLoading: Boolean = false,
         val errorMessage: String? = null
@@ -74,12 +76,9 @@ class ClassroomConfigViewModel @Inject constructor(
      */
     private fun observeDeviceDiscovery() {
         viewModelScope.launch {
-            combine(
-                deviceDiscoveryService.groupStats,
-                deviceDiscoveryService.discoveredDevices
-            ) { stats, devices ->
-                Pair(stats, devices)
-            }.collect { (stats, devices) ->
+            // 使用简化的方式观察设备变化
+            try {
+                val devices = deviceRepository.getAllDevices()
                 // 过滤当前分组的设备
                 val currentGroupId = _uiState.value.currentConfig.groupId
                 val groupDevices = if (currentGroupId.isNotEmpty()) {
@@ -89,13 +88,28 @@ class ClassroomConfigViewModel @Inject constructor(
                 }
                 
                 _uiState.value = _uiState.value.copy(
-                    groupStats = stats,
-                    groupDevices = groupDevices
+                    groupDevices = groupDevices,
+                    groupStats = calculateGroupStats(groupDevices)
                 )
                 
-                Log.d(TAG, "Discovery updated - Stats: $stats, Group devices: ${groupDevices.size}")
+                Log.d(TAG, "Discovery updated - Group devices: ${groupDevices.size}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load devices", e)
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "加载设备失败：${e.message}"
+                )
             }
         }
+    }
+
+    private fun calculateGroupStats(devices: List<Device>): GroupDeviceStats {
+        val groupId = _uiState.value.currentConfig.groupId
+        return GroupDeviceStats(
+            groupId = groupId,
+            totalDevices = devices.size,
+            onlineDevices = devices.count { it.isOnline },
+            offlineDevices = devices.count { !it.isOnline }
+        )
     }
     
     /**
@@ -188,7 +202,10 @@ class ClassroomConfigViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 Log.d(TAG, "Refreshing group devices")
-                deviceDiscoveryService.refreshDevices()
+                val groupId = _uiState.value.currentConfig.groupId
+                if (groupId.isNotEmpty()) {
+                    deviceDiscoveryService.startDiscovery(groupId)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to refresh devices", e)
                 _uiState.value = _uiState.value.copy(
@@ -232,5 +249,12 @@ class ClassroomConfigViewModel @Inject constructor(
      */
     fun generateSuggestedGroupId(buildingCode: String, floorNumber: Int, roomNumber: String): String {
         return classroomConfigRepository.generateSuggestedGroupId(buildingCode, floorNumber, roomNumber)
+    }
+
+    /**
+     * 刷新设备列表
+     */
+    fun refreshDevices() {
+        refreshGroupDevices()
     }
 }
