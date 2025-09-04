@@ -123,7 +123,7 @@
                         <div class="card-body">
                             <div id="systemLogs" class="system-logs-container">
                                 <!-- 系统日志内容 -->
-                                <div class="text-muted py-3">
+                                <div class="text-muted py-3 text-start">
                                     系统日志将在这里显示...
                                 </div>
                             </div>
@@ -142,6 +142,9 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="d-grid gap-2">
+                                        <button class="btn btn-success" onclick="createTestDevices()">
+                                            <i class="bi bi-plus-circle"></i> 一键创建测试设备
+                                        </button>
                                         <button class="btn btn-info" onclick="exportSystemData()">
                                             <i class="bi bi-download"></i> 导出系统数据
                                         </button>
@@ -315,6 +318,53 @@
             reader.readAsText(file);
         }
 
+        // 一键创建测试设备
+        async function createTestDevices() {
+            if (!confirm('将创建100个测试设备和4个分组，这可能需要一些时间。确认继续吗？')) {
+                return;
+            }
+            
+            const button = document.querySelector('button[onclick="createTestDevices()"]');
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split"></i> 正在创建...';
+            
+            try {
+                addLog('info', '开始批量创建测试设备...');
+                
+                const response = await fetch('/api/system/create-test-devices', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        deviceCount: 100,
+                        groupCount: 4
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog('success', result.message);
+                    alert(`测试设备创建成功！\n设备数量: ${result.data.devices}\n分组数量: ${result.data.groups}`);
+                    
+                    // 可选：刷新页面或更新相关信息
+                    refreshSystemInfo();
+                } else {
+                    addLog('error', '创建测试设备失败: ' + result.error);
+                    alert('创建失败: ' + result.error);
+                }
+                
+            } catch (error) {
+                addLog('error', '创建测试设备出错: ' + error.message);
+                alert('操作失败: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
         // 刷新日志
         function refreshLogs() {
             // 生成一些示例日志
@@ -362,7 +412,7 @@
             logsContainer.innerHTML = '';
             
             if (filteredLogs.length === 0) {
-                logsContainer.innerHTML = '<div class="text-muted">暂无日志记录</div>';
+                logsContainer.innerHTML = '<div class="text-muted text-start">暂无日志记录</div>';
                 return;
             }
             

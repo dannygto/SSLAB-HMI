@@ -50,6 +50,7 @@ class ApiRouter {
         this.router.post('/system/reset', this.resetSystem.bind(this));
         this.router.post('/system/clear', this.clearDevices.bind(this));
         this.router.get('/system/health', this.getSystemHealth.bind(this));
+        this.router.post('/system/create-test-devices', this.createTestDevices.bind(this));
         
         // API文档和设备类型信息路由
         this.router.get('/info/device-types', this.getDeviceTypes.bind(this));
@@ -558,6 +559,99 @@ class ApiRouter {
                 success: true,
                 data: health
             });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 批量创建测试设备
+     */
+    async createTestDevices(req, res) {
+        try {
+            const { deviceCount = 100, groupCount = 4 } = req.body;
+            
+            // 先创建分组
+            const groups = [];
+            const groupNames = ['A区实验室', 'B区实验室', 'C区实验室', 'D区实验室'];
+            
+            for (let i = 0; i < Math.min(groupCount, groupNames.length); i++) {
+                const groupName = groupNames[i];
+                const groupId = `test-group-${i + 1}`;
+                
+                const group = {
+                    id: groupId,
+                    name: groupName,
+                    description: `${groupName}设备分组`,
+                    deviceCount: 0
+                };
+                
+                this.deviceManager.addGroup(group);
+                groups.push(group);
+            }
+            
+            // 设备类型列表
+            const deviceTypes = Object.values(DeviceType);
+            const createdDevices = [];
+            const devicesPerGroup = Math.ceil(deviceCount / groups.length);
+            
+            for (let i = 0; i < deviceCount; i++) {
+                const groupIndex = Math.floor(i / devicesPerGroup);
+                const currentGroup = groups[Math.min(groupIndex, groups.length - 1)];
+                
+                // 随机选择设备类型
+                const deviceType = deviceTypes[Math.floor(Math.random() * deviceTypes.length)];
+                
+                // 生成设备名称
+                const deviceTypeNames = {
+                    [DeviceType.ENVIRONMENT_MONITOR]: '环境监测',
+                    [DeviceType.STUDENT_POWER_TERMINAL]: '学生电源',
+                    [DeviceType.ENVIRONMENT_CONTROLLER]: '环境控制',
+                    [DeviceType.CURTAIN_CONTROLLER]: '窗帘控制',
+                    [DeviceType.LIGHTING_CONTROLLER]: '灯光控制',
+                    [DeviceType.LIFT_CONTROLLER]: '升降控制'
+                };
+                
+                const deviceName = `${deviceTypeNames[deviceType]}_${String(i + 1).padStart(3, '0')}`;
+                
+                // 创建设备
+                const device = this.deviceManager.addDevice({
+                    name: deviceName,
+                    type: deviceType,
+                    groupId: currentGroup.id,
+                    config: {
+                        autoStart: Math.random() > 0.3, // 70%概率自动启动
+                        testDevice: true
+                    }
+                });
+                
+                if (device) {
+                    createdDevices.push(device);
+                    
+                    // 如果自动启动，则启动设备
+                    if (device.config?.autoStart) {
+                        this.deviceManager.startDevice(device.id);
+                    }
+                }
+            }
+            
+            res.json({
+                success: true,
+                message: `成功创建 ${createdDevices.length} 个测试设备，分布在 ${groups.length} 个分组中`,
+                data: {
+                    devices: createdDevices.length,
+                    groups: groups.length,
+                    groupDetails: groups.map(g => ({
+                        id: g.id,
+                        name: g.name,
+                        deviceCount: this.deviceManager.getDevicesByGroup(g.id).length
+                    }))
+                }
+            });
+            
         } catch (error) {
             res.status(500).json({
                 success: false,
