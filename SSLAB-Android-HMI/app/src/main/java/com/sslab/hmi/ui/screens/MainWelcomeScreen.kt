@@ -32,7 +32,8 @@ fun MainWelcomeScreen(
     onNavigateToEnvironment: () -> Unit,
     onNavigateToClassroomConfig: () -> Unit,
     onNavigateToApiTest: () -> Unit,
-    onNavigateToServerConnection: () -> Unit
+    onNavigateToServerConnection: () -> Unit,
+    onNavigateToInteractiveTeaching: () -> Unit
 ) {
     // 1280*800 横屏布局，应用蓝色渐变背景
     Box(
@@ -290,6 +291,21 @@ fun MainWelcomeScreen(
                                 BlueGradientColors.Green
                             ),
                             onClick = onNavigateToEnvironment
+                        )
+                        
+                        // 互动教学 - 使用紫色渐变
+                        FunctionCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            title = "互动教学",
+                            description = "在线答题系统\n实时统计分析",
+                            icon = Icons.Default.Quiz,
+                            gradientColors = listOf(
+                                BlueGradientColors.DeepBlue,
+                                BlueGradientColors.AccentBlue
+                            ),
+                            onClick = onNavigateToInteractiveTeaching
                         )
                     }
 
