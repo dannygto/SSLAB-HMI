@@ -36,9 +36,21 @@ fun StudentSeatCard(
             .size(80.dp)
             .clickable { onSeatClick(seat.seatId) },
         colors = CardDefaults.cardColors(
-            containerColor = seat.status.color.copy(alpha = 0.1f)
+            containerColor = when (seat.status) {
+                SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.1f)
+                SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.1f)
+                SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.1f)
+                SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red.copy(alpha = 0.1f)
+                SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.1f)
+            }
         ),
-        border = BorderStroke(2.dp, seat.status.color),
+        border = BorderStroke(2.dp, when (seat.status) {
+            SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray
+            SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue
+            SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green
+            SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red
+            SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow
+        }),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -53,7 +65,13 @@ fun StudentSeatCard(
             Text(
                 text = seat.seatId,
                 style = MaterialTheme.typography.labelMedium,
-                color = seat.status.color,
+                color = when (seat.status) {
+                    SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray
+                    SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue
+                    SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green
+                    SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red
+                    SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow
+                },
                 fontWeight = FontWeight.Bold,
                 fontSize = 11.sp
             )
@@ -77,7 +95,13 @@ fun StudentSeatCard(
                 Box(
                     modifier = Modifier
                         .size(12.dp)
-                        .background(seat.status.color, CircleShape)
+                        .background(when (seat.status) {
+                            SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray
+                            SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue
+                            SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green
+                            SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red
+                            SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow
+                        }, CircleShape)
                 )
                 
                 // 答案显示
@@ -85,7 +109,13 @@ fun StudentSeatCard(
                     Text(
                         text = seat.lastAnswer,
                         style = MaterialTheme.typography.labelSmall,
-                        color = seat.status.color,
+                        color = when (seat.status) {
+                            SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray
+                            SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue
+                            SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green
+                            SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red
+                            SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow
+                        },
                         fontWeight = FontWeight.Bold,
                         fontSize = 10.sp
                     )
@@ -188,11 +218,23 @@ fun StudentSeatsGrid(
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
-                                .background(status.color, CircleShape)
+                                .background(when (status) {
+                                    SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray
+                                    SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue
+                                    SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green
+                                    SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red
+                                    SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow
+                                }, CircleShape)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = status.label,
+                            text = when (status) {
+                                SeatStatus.EMPTY -> "空座"
+                                SeatStatus.WAITING -> "等待"
+                                SeatStatus.CORRECT -> "正确"
+                                SeatStatus.INCORRECT -> "错误"
+                                SeatStatus.TIMEOUT -> "超时"
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             color = BlueGradientColors.SecondaryText,
                             fontSize = 10.sp
@@ -428,30 +470,30 @@ fun AnswerStatisticsCard(
                 ) {
                     StatisticItem(
                         title = "参与率",
-                        value = "${(statistics.participationRate * 100).toInt()}%",
+                        value = "${if (statistics.totalAnswered + statistics.unanswered > 0) (statistics.totalAnswered * 100) / (statistics.totalAnswered + statistics.unanswered) else 0}%",
                         color = BlueGradientColors.AccentBlue
                     )
                     StatisticItem(
                         title = "正确率", 
-                        value = "${(statistics.correctRate * 100).toInt()}%",
+                        value = "${if (statistics.totalAnswered > 0) (statistics.correctAnswers * 100) / statistics.totalAnswered else 0}%",
                         color = BlueGradientColors.AccentGreen
                     )
                     StatisticItem(
                         title = "已答题",
-                        value = "${statistics.answeredCount}人",
+                        value = "${statistics.totalAnswered}人",
                         color = BlueGradientColors.AccentBlue
                     )
                     StatisticItem(
                         title = "答对",
-                        value = "${statistics.correctCount}人",
+                        value = "${statistics.correctAnswers}人",
                         color = BlueGradientColors.AccentGreen
                     )
                 }
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                // 最快答题学生
-                if (statistics.fastestStudent != null && statistics.fastestTime != null) {
+                // 答题时间统计
+                if (statistics.fastestTime > 0) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = BlueGradientColors.AccentGreen.copy(alpha = 0.1f)
@@ -474,59 +516,11 @@ fun AnswerStatisticsCard(
                             Spacer(modifier = Modifier.width(8.dp))
                             
                             Text(
-                                text = "最快答题: ${statistics.fastestStudent} (${statistics.fastestTime / 1000.0}秒)",
+                                text = "最快答题时间: ${statistics.fastestTime / 1000.0}秒",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = BlueGradientColors.AccentGreen,
                                 fontWeight = FontWeight.Medium
                             )
-                        }
-                    }
-                }
-                
-                // 选项统计
-                if (statistics.optionStatistics.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Text(
-                        text = "选项分布",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = BlueGradientColors.PrimaryText,
-                        fontWeight = FontWeight.Medium
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        statistics.optionStatistics.forEach { (option, count) ->
-                            Card(
-                                modifier = Modifier.weight(1f),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = BlueGradientColors.AccentBlue.copy(alpha = 0.1f)
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Text(
-                                        text = option,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = BlueGradientColors.AccentBlue,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = "${count}人",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = BlueGradientColors.SecondaryText
-                                    )
-                                }
-                            }
                         }
                     }
                 }

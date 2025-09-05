@@ -99,7 +99,7 @@ fun InteractiveTeachingScreen(
                 }
                 
                 // 清除答案按钮
-                if (statistics != null && statistics!!.answeredCount > 0) {
+                if (statistics != null && statistics!!.totalAnswered > 0) {
                     FloatingActionButton(
                         onClick = { viewModel.clearAnswers() },
                         containerColor = BlueGradientColors.AccentBlue
@@ -598,7 +598,13 @@ fun SeatInfoDialog(
                     // 当前状态
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = seat.status.color.copy(alpha = 0.1f)
+                            containerColor = when (seat.status) {
+                                SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.1f)
+                                SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue.copy(alpha = 0.1f)
+                                SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green.copy(alpha = 0.1f)
+                                SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red.copy(alpha = 0.1f)
+                                SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow.copy(alpha = 0.1f)
+                            }
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
@@ -611,14 +617,32 @@ fun SeatInfoDialog(
                             Icon(
                                 imageVector = Icons.Default.Person,
                                 contentDescription = "学生状态",
-                                tint = seat.status.color,
+                                tint = when (seat.status) {
+                                    SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray
+                                    SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue
+                                    SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green
+                                    SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red
+                                    SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow
+                                },
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "状态: ${seat.status.label}",
+                                text = "状态: ${when (seat.status) {
+                                    SeatStatus.EMPTY -> "空座"
+                                    SeatStatus.WAITING -> "等待"
+                                    SeatStatus.CORRECT -> "正确"
+                                    SeatStatus.INCORRECT -> "错误"
+                                    SeatStatus.TIMEOUT -> "超时"
+                                }}",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = seat.status.color,
+                                color = when (seat.status) {
+                                    SeatStatus.EMPTY -> androidx.compose.ui.graphics.Color.Gray
+                                    SeatStatus.WAITING -> androidx.compose.ui.graphics.Color.Blue
+                                    SeatStatus.CORRECT -> androidx.compose.ui.graphics.Color.Green
+                                    SeatStatus.INCORRECT -> androidx.compose.ui.graphics.Color.Red
+                                    SeatStatus.TIMEOUT -> androidx.compose.ui.graphics.Color.Yellow
+                                },
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -634,7 +658,7 @@ fun SeatInfoDialog(
                     )
                     
                     // 最后答案显示
-                    if (seat.lastAnswer != null && seat.lastAnswerTime != null) {
+                    if (seat.lastAnswer != null && seat.responseTime != null) {
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = BlueGradientColors.AccentBlue.copy(alpha = 0.1f)
@@ -653,7 +677,7 @@ fun SeatInfoDialog(
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = "答题时间: ${seat.lastAnswerTime / 1000.0}秒",
+                                    text = "答题时间: ${seat.responseTime / 1000.0}秒",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = BlueGradientColors.SecondaryText
                                 )

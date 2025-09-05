@@ -5,11 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.delay
-import com.sslab.hmi.ui.screens.interactive.Question
-import com.sslab.hmi.ui.screens.interactive.QuestionDifficulty
-import com.sslab.hmi.ui.screens.interactive.StudentAnswer
-import com.sslab.hmi.ui.screens.interactive.StudentSeat
-import com.sslab.hmi.ui.screens.interactive.SeatStatus
+import com.sslab.hmi.ui.screens.interactive.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -72,9 +68,10 @@ class InteractiveTeachingRepository @Inject constructor() {
                     StudentSeat(
                         seatId = seatId,
                         studentName = studentName,
-                        status = if (studentName != null) SeatStatus.OCCUPIED else SeatStatus.EMPTY,
+                        status = if (studentName != null) SeatStatus.WAITING else SeatStatus.EMPTY,
                         lastAnswer = null,
-                        lastAnswerTime = null
+                        responseTime = null,
+                        isCorrect = null
                     )
                 )
             }
@@ -112,46 +109,47 @@ class InteractiveTeachingRepository @Inject constructor() {
     /**
      * 学生提交答案
      */
-    suspend fun submitAnswer(seatId: String, answer: String) {
+    suspend fun submitAnswer(seatPosition: String, answer: String) {
         val currentQuestion = _currentQuestion.value ?: return
         if (!_isQuestionActive.value) return
         
         val currentTime = System.currentTimeMillis()
-        val seat = _students.value.find { it.seatId == seatId } ?: return
+        val seat = _students.value.find { it.seatId == seatPosition } ?: return
         
         // 记录学生答案
         val studentAnswer = StudentAnswer(
+            studentId = seat.studentName ?: "未知学生",
+            seatPosition = seatPosition,
             questionId = currentQuestion.id,
-            seatId = seatId,
-            studentName = seat.studentName ?: "未知学生",
             answer = answer,
-            isCorrect = answer == currentQuestion.correctAnswer,
             timestamp = currentTime,
-            answerTime = currentTime // 简化处理，实际应该记录开始答题时间
+            isCorrect = answer == currentQuestion.correctAnswer,
+            responseTime = (currentTime - (currentQuestion.startTime ?: currentTime)).toInt() // 计算答题用时
         )
         
         // 更新答案列表
         val updatedAnswers = _studentAnswers.value.toMutableList()
         // 移除该学生的旧答案
-        updatedAnswers.removeAll { it.seatId == seatId && it.questionId == currentQuestion.id }
+        updatedAnswers.removeAll { it.seatPosition == seatPosition && it.questionId == currentQuestion.id }
         // 添加新答案
         updatedAnswers.add(studentAnswer)
         _studentAnswers.value = updatedAnswers
         
         // 更新座位状态
-        updateSeatStatus(seatId, answer, currentTime, answer == currentQuestion.correctAnswer)
+        updateSeatStatus(seatPosition, answer, currentTime, answer == currentQuestion.correctAnswer)
     }
     
     /**
      * 更新座位状态
      */
-    private suspend fun updateSeatStatus(seatId: String, answer: String, answerTime: Long, isCorrect: Boolean) {
+    private suspend fun updateSeatStatus(seatPosition: String, answer: String, answerTime: Long, isCorrect: Boolean) {
         val updatedSeats = _students.value.map { seat ->
-            if (seat.seatId == seatId && seat.studentName != null) {
+            if (seat.seatId == seatPosition && seat.studentName != null) {
                 seat.copy(
                     status = if (isCorrect) SeatStatus.CORRECT else SeatStatus.INCORRECT,
                     lastAnswer = answer,
-                    lastAnswerTime = answerTime
+                    responseTime = (answerTime - (_currentQuestion.value?.startTime ?: answerTime)).toInt(),
+                    isCorrect = isCorrect
                 )
             } else {
                 seat
@@ -169,9 +167,10 @@ class InteractiveTeachingRepository @Inject constructor() {
         // 重置所有座位状态
         val resetSeats = _students.value.map { seat ->
             seat.copy(
-                status = if (seat.studentName != null) SeatStatus.OCCUPIED else SeatStatus.EMPTY,
+                status = if (seat.studentName != null) SeatStatus.WAITING else SeatStatus.EMPTY,
                 lastAnswer = null,
-                lastAnswerTime = null
+                responseTime = null,
+                isCorrect = null
             )
         }
         _students.value = resetSeats
@@ -185,9 +184,10 @@ class InteractiveTeachingRepository @Inject constructor() {
             if (seat.seatId == seatId) {
                 seat.copy(
                     studentName = studentName,
-                    status = SeatStatus.OCCUPIED,
+                    status = SeatStatus.WAITING,
                     lastAnswer = null,
-                    lastAnswerTime = null
+                    responseTime = null,
+                    isCorrect = null
                 )
             } else {
                 seat
@@ -206,7 +206,8 @@ class InteractiveTeachingRepository @Inject constructor() {
                     studentName = null,
                     status = SeatStatus.EMPTY,
                     lastAnswer = null,
-                    lastAnswerTime = null
+                    responseTime = null,
+                    isCorrect = null
                 )
             } else {
                 seat
