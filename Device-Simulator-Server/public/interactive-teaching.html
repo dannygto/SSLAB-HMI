@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互动教学系统 - API测试页面</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .api-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #0d6efd;
+        }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .seat {
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .seat-empty { background-color: #e9ecef; color: #6c757d; }
+        .seat-occupied { background-color: #cfe2ff; color: #084298; border: 2px solid #6ea8fe; }
+        .seat-answered { background-color: #d1ecf1; color: #055160; }
+        .seat-correct { background-color: #d1e7dd; color: #0f5132; border: 2px solid #badbcc; }
+        .seat-incorrect { background-color: #f8d7da; color: #842029; border: 2px solid #f5c2c7; }
+        
+        .response-display {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .test-button {
+            margin: 5px;
+        }
+        
+        .form-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <!-- 统一导航栏容器 -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="text-center">
+                    <h2 class="mb-2">📚 互动教学系统 - API测试</h2>
+                    <p class="text-muted">在线测试互动教学系统的所有API接口</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统状态 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-info-circle"></i> 系统状态</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">当前会话</h6>
+                                    <div id="current-session">加载中...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">设备统计</h6>
+                                    <div id="device-stats">加载中...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 座位布局可视化 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-grid-3x3"></i> 座位布局 (A1-D4)</h4>
+                    <div class="seat-grid" id="seat-grid">
+                        <!-- 座位将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary btn-sm test-button" onclick="refreshSeats()">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新座位状态
+                        </button>
+                        <button class="btn btn-success btn-sm test-button ms-2" onclick="assignAllStudents()">
+                            <i class="bi bi-person-plus"></i> 一键分配16个学生
+                        </button>
+                        <button class="btn btn-warning btn-sm test-button ms-2" onclick="simulateAllAnswers()">
+                            <i class="bi bi-check2-square"></i> 一键模拟答题
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 会话管理 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-play-circle"></i> 会话管理</h4>
+                    <div class="form-section">
+                        <h6>创建新会话</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="session-name" placeholder="会话名称" value="测试会话">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="session-description" placeholder="会话描述" value="API测试会话">
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-success" onclick="createSession()">
+                                    <i class="bi bi-plus"></i> 创建会话
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap">
+                        <button class="btn btn-info test-button" onclick="getCurrentSession()">获取当前会话</button>
+                        <button class="btn btn-warning test-button" onclick="endSession()">结束会话</button>
+                        <button class="btn btn-secondary test-button" onclick="clearSessionData()">清除会话数据</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目管理 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-question-circle"></i> 题目管理</h4>
+                    <div class="form-section">
+                        <h6>创建新题目</h6>
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="question-text" placeholder="题目内容" value="1+1等于几？">
+                            </div>
+                            <div class="col-md-6">
+                                <select class="form-control" id="question-type">
+                                    <option value="single">单选题</option>
+                                    <option value="multiple">多选题</option>
+                                    <option value="text">文本题</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" id="option-a" placeholder="选项A" value="1">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" id="option-b" placeholder="选项B" value="2">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" id="option-c" placeholder="选项C" value="3">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" id="option-d" placeholder="选项D" value="4">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <input type="text" class="form-control" id="correct-answer" placeholder="正确答案" value="B">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="number" class="form-control" id="time-limit" placeholder="时间限制(秒)" value="60">
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-success" onclick="createQuestion()">
+                                    <i class="bi bi-plus"></i> 创建题目
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap">
+                        <button class="btn btn-primary test-button" onclick="publishQuestion()">发布题目</button>
+                        <button class="btn btn-info test-button" onclick="getCurrentQuestion()">获取当前题目</button>
+                        <button class="btn btn-warning test-button" onclick="stopQuestion()">停止答题</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 学生管理 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-people"></i> 学生管理</h4>
+                    <div class="form-section">
+                        <h6>分配学生到座位</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <select class="form-control" id="seat-id">
+                                    <option value="">选择座位</option>
+                                    <option value="A1">A1</option>
+                                    <option value="A2">A2</option>
+                                    <option value="B1">B1</option>
+                                    <option value="C1">C1</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" id="student-id" placeholder="学生ID" value="STU001">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" id="student-name" placeholder="学生姓名" value="张三">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-success" onclick="assignStudent()">
+                                    <i class="bi bi-person-plus"></i> 分配学生
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <h6>模拟学生答题</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <select class="form-control" id="answer-seat-id">
+                                    <option value="">选择座位</option>
+                                    <option value="A1">A1</option>
+                                    <option value="A2">A2</option>
+                                    <option value="B1">B1</option>
+                                    <option value="C1">C1</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" id="answer-content" placeholder="答案内容" value="B">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control" id="answer-time" placeholder="答题时间(秒)" value="30">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary" onclick="submitAnswer()">
+                                    <i class="bi bi-check"></i> 提交答案
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap">
+                        <button class="btn btn-info test-button" onclick="getStudentList()">获取学生列表</button>
+                        <button class="btn btn-secondary test-button" onclick="clearAllAnswers()">清除所有答案</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计分析 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-bar-chart"></i> 统计分析</h4>
+                    <div class="d-flex flex-wrap">
+                        <button class="btn btn-info test-button" onclick="getAnswerStatistics()">获取答题统计</button>
+                        <button class="btn btn-info test-button" onclick="getParticipationRate()">获取参与率</button>
+                        <button class="btn btn-info test-button" onclick="getCorrectRate()">获取正确率</button>
+                        <button class="btn btn-info test-button" onclick="getAverageTime()">获取平均时间</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API响应显示 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-terminal"></i> API响应</h4>
+                    <div class="response-display" id="api-response">点击上方按钮测试API...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载公共组件和脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/common.js"></script>
+    
+    <script>
+        // API基础URL
+        const API_BASE = '/api';
+        
+        // 全局变量
+        let lastCreatedQuestionId = null;
+        
+        // 显示API响应
+        function displayResponse(response, url, method = 'GET') {
+            const responseDiv = document.getElementById('api-response');
+            const timestamp = new Date().toLocaleTimeString();
+            responseDiv.textContent = `[${timestamp}] ${method} ${url}\n\n${JSON.stringify(response, null, 2)}`;
+        }
+
+        // 显示错误
+        function displayError(error, url, method = 'GET') {
+            const responseDiv = document.getElementById('api-response');
+            const timestamp = new Date().toLocaleTimeString();
+            responseDiv.textContent = `[${timestamp}] ERROR ${method} ${url}\n\n${error.message || error}`;
+        }
+
+        // 生成座位网格
+        function generateSeatGrid() {
+            const seatGrid = document.getElementById('seat-grid');
+            const rows = ['A', 'B', 'C', 'D'];
+            const cols = [1, 2, 3, 4];
+            
+            seatGrid.innerHTML = '';
+            
+            rows.forEach(row => {
+                cols.forEach(col => {
+                    const seatId = `${row}${col}`;
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat seat-empty';
+                    seatDiv.id = `seat-${seatId}`;
+                    seatDiv.textContent = seatId;
+                    seatGrid.appendChild(seatDiv);
+                });
+            });
+        }
+
+        // 刷新座位状态
+        async function refreshSeats() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/students`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || '获取学生信息失败');
+                }
+                
+                const students = result.data || [];
+                
+                // 重置所有座位
+                document.querySelectorAll('.seat').forEach(seat => {
+                    seat.className = 'seat seat-empty';
+                    seat.textContent = seat.id.replace('seat-', '');
+                });
+                
+                // 更新有学生的座位
+                students.forEach(student => {
+                    if (student.studentName && student.status !== 'EMPTY') {
+                        const seatElement = document.getElementById(`seat-${student.seatId}`);
+                        if (seatElement) {
+                            seatElement.className = `seat seat-occupied`;
+                            seatElement.innerHTML = `<strong>${student.seatId}</strong><br><small>${student.studentName}</small>`;
+                            
+                            // 根据答题状态添加不同的样式
+                            if (student.lastAnswer) {
+                                seatElement.classList.add('seat-answered');
+                                if (student.isCorrect === true) {
+                                    seatElement.classList.add('seat-correct');
+                                } else if (student.isCorrect === false) {
+                                    seatElement.classList.add('seat-incorrect');
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                displayResponse(students, '/interactive/students');
+            } catch (error) {
+                displayError(error, '/interactive/students');
+            }
+        }
+
+        // 会话管理API
+        async function createSession() {
+            try {
+                const name = document.getElementById('session-name').value;
+                const description = document.getElementById('session-description').value;
+                
+                const response = await fetch(`${API_BASE}/interactive/sessions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description })
+                });
+                const result = await response.json();
+                displayResponse(result, '/interactive/sessions', 'POST');
+                updateSystemStatus();
+            } catch (error) {
+                displayError(error, '/interactive/sessions', 'POST');
+            }
+        }
+
+        async function getCurrentSession() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/sessions/current`);
+                const result = await response.json();
+                displayResponse(result, '/interactive/sessions/current');
+            } catch (error) {
+                displayError(error, '/interactive/sessions/current');
+            }
+        }
+
+        async function endSession() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/sessions/current`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                displayResponse(result, '/interactive/sessions/current', 'DELETE');
+                updateSystemStatus();
+            } catch (error) {
+                displayError(error, '/interactive/sessions/current', 'DELETE');
+            }
+        }
+
+        async function clearSessionData() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/sessions/clear`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                displayResponse(result, '/interactive/sessions/clear', 'POST');
+                refreshSeats();
+            } catch (error) {
+                displayError(error, '/interactive/sessions/clear', 'POST');
+            }
+        }
+
+        // 题目管理API
+        async function createQuestion() {
+            try {
+                const options = [
+                    document.getElementById('option-a').value,
+                    document.getElementById('option-b').value,
+                    document.getElementById('option-c').value,
+                    document.getElementById('option-d').value
+                ];
+                
+                const correctAnswerIndex = document.getElementById('correct-answer').value;
+                let correctAnswer;
+                
+                // 将A,B,C,D转换为实际的选项值
+                switch(correctAnswerIndex.toUpperCase()) {
+                    case 'A': correctAnswer = options[0]; break;
+                    case 'B': correctAnswer = options[1]; break;
+                    case 'C': correctAnswer = options[2]; break;
+                    case 'D': correctAnswer = options[3]; break;
+                    default: correctAnswer = correctAnswerIndex; // 如果直接输入选项值
+                }
+                
+                const questionData = {
+                    content: document.getElementById('question-text').value,
+                    options: options,
+                    correctAnswer: correctAnswer,
+                    timeLimit: parseInt(document.getElementById('time-limit').value) || 60
+                };
+                
+                const response = await fetch(`${API_BASE}/interactive/questions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(questionData)
+                });
+                const result = await response.json();
+                
+                // 保存创建的问题ID
+                if (result.success && result.data && result.data.id) {
+                    lastCreatedQuestionId = result.data.id;
+                }
+                
+                displayResponse(result, '/interactive/questions', 'POST');
+            } catch (error) {
+                displayError(error, '/interactive/questions', 'POST');
+            }
+        }
+
+        async function publishQuestion() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/questions/publish`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                displayResponse(result, '/interactive/questions/publish', 'POST');
+            } catch (error) {
+                displayError(error, '/interactive/questions/publish', 'POST');
+            }
+        }
+
+        async function getCurrentQuestion() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/questions/current`);
+                const result = await response.json();
+                displayResponse(result, '/interactive/questions/current');
+            } catch (error) {
+                displayError(error, '/interactive/questions/current');
+            }
+        }
+
+        async function stopQuestion() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/questions/stop`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                displayResponse(result, '/interactive/questions/stop', 'POST');
+            } catch (error) {
+                displayError(error, '/interactive/questions/stop', 'POST');
+            }
+        }
+
+        // 学生管理API
+        async function assignStudent() {
+            try {
+                const studentData = {
+                    seatId: document.getElementById('seat-id').value,
+                    studentName: document.getElementById('student-name').value
+                };
+                
+                const response = await fetch(`${API_BASE}/interactive/students`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(studentData)
+                });
+                const result = await response.json();
+                displayResponse(result, '/interactive/students', 'POST');
+                refreshSeats();
+            } catch (error) {
+                displayError(error, '/interactive/students', 'POST');
+            }
+        }
+
+        async function submitAnswer() {
+            try {
+                const seatId = document.getElementById('answer-seat-id').value;
+                const answerData = {
+                    answer: document.getElementById('answer-content').value
+                };
+                
+                const response = await fetch(`${API_BASE}/interactive/students/${seatId}/answer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(answerData)
+                });
+                const result = await response.json();
+                displayResponse(result, `/interactive/students/${seatId}/answer`, 'POST');
+                refreshSeats();
+            } catch (error) {
+                displayError(error, `/interactive/students/${seatId}/answer`, 'POST');
+            }
+        }
+
+        async function getStudentList() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/students`);
+                const result = await response.json();
+                displayResponse(result, '/interactive/students');
+            } catch (error) {
+                displayError(error, '/interactive/students');
+            }
+        }
+
+        async function clearAllAnswers() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/students/clear-answers`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                displayResponse(result, '/interactive/students/clear-answers', 'POST');
+                refreshSeats();
+            } catch (error) {
+                displayError(error, '/interactive/students/clear-answers', 'POST');
+            }
+        }
+
+        // 统计分析API
+        async function getAnswerStatistics() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/statistics/answers`);
+                const result = await response.json();
+                displayResponse(result, '/interactive/statistics/answers');
+            } catch (error) {
+                displayError(error, '/interactive/statistics/answers');
+            }
+        }
+
+        async function getParticipationRate() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/statistics/participation-rate`);
+                const result = await response.json();
+                displayResponse(result, '/interactive/statistics/participation-rate');
+            } catch (error) {
+                displayError(error, '/interactive/statistics/participation-rate');
+            }
+        }
+
+        async function getCorrectRate() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/statistics/correct-rate`);
+                const result = await response.json();
+                displayResponse(result, '/interactive/statistics/correct-rate');
+            } catch (error) {
+                displayError(error, '/interactive/statistics/correct-rate');
+            }
+        }
+
+        async function getAverageTime() {
+            try {
+                const response = await fetch(`${API_BASE}/interactive/statistics/average-time`);
+                const result = await response.json();
+                displayResponse(result, '/interactive/statistics/average-time');
+            } catch (error) {
+                displayError(error, '/interactive/statistics/average-time');
+            }
+        }
+
+        // 一键分配16个学生座位
+        async function assignAllStudents() {
+            try {
+                const studentNames = [
+                    '张三', '李四', '王五', '赵六', '陈七', '刘八', '杨九', '黄十',
+                    '周小明', '吴小红', '孙小华', '胡小丽', '朱小强', '高小美', '林小刚', '罗小芳'
+                ];
+                
+                let successCount = 0;
+                let failCount = 0;
+                
+                for (let row = 0; row < 4; row++) {
+                    for (let col = 0; col < 4; col++) {
+                        const seatId = String.fromCharCode(65 + row) + (col + 1); // A1, A2, ..., D4
+                        const studentName = studentNames[row * 4 + col];
+                        
+                        try {
+                            const response = await fetch(`${API_BASE}/interactive/students`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    seatId: seatId,
+                                    studentName: studentName
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                successCount++;
+                            } else {
+                                failCount++;
+                                console.error(`Failed to assign student to ${seatId}`);
+                            }
+                        } catch (error) {
+                            failCount++;
+                            console.error(`Error assigning student to ${seatId}:`, error);
+                        }
+                        
+                        // 添加小延迟避免请求过快
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                }
+                
+                // 显示结果
+                const result = {
+                    message: '一键分配学生完成',
+                    success: successCount,
+                    failed: failCount,
+                    total: 16
+                };
+                displayResponse(result, '/interactive/students/assign (批量)', 'POST');
+                
+                // 刷新座位状态
+                await refreshSeats();
+                
+            } catch (error) {
+                displayError(error, '/interactive/students/assign (批量)', 'POST');
+            }
+        }
+
+        // 一键模拟所有学生答题
+        async function simulateAllAnswers() {
+            try {
+                // 首先获取当前题目
+                const questionResponse = await fetch(`${API_BASE}/interactive/questions/current`);
+                const questionData = await questionResponse.json();
+                
+                if (!questionData.question) {
+                    displayError(new Error('没有当前题目，请先发布一个题目'), '/interactive/answers/submit (批量)', 'POST');
+                    return;
+                }
+                
+                let successCount = 0;
+                let failCount = 0;
+                const answers = ['A', 'B', 'C', 'D'];
+                
+                for (let row = 0; row < 4; row++) {
+                    for (let col = 0; col < 4; col++) {
+                        const seatId = String.fromCharCode(65 + row) + (col + 1); // A1, A2, ..., D4
+                        const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
+                        
+                        try {
+                            const response = await fetch(`${API_BASE}/interactive/students/${seatId}/answer`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    answer: randomAnswer
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                successCount++;
+                            } else {
+                                failCount++;
+                                console.error(`Failed to submit answer for ${seatId}`);
+                            }
+                        } catch (error) {
+                            failCount++;
+                            console.error(`Error submitting answer for ${seatId}:`, error);
+                        }
+                        
+                        // 添加小延迟模拟真实答题时间间隔
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                }
+                
+                // 显示结果
+                const result = {
+                    message: '一键模拟答题完成',
+                    questionId: questionData.question.id,
+                    success: successCount,
+                    failed: failCount,
+                    total: 16
+                };
+                displayResponse(result, '/interactive/answers/submit (批量)', 'POST');
+                
+                // 刷新座位状态
+                await refreshSeats();
+                
+            } catch (error) {
+                displayError(error, '/interactive/answers/submit (批量)', 'POST');
+            }
+        }
+
+        // 更新系统状态
+        async function updateSystemStatus() {
+            try {
+                // 获取当前会话
+                const sessionResponse = await fetch(`${API_BASE}/interactive/sessions/current`);
+                const sessionData = await sessionResponse.json();
+                
+                document.getElementById('current-session').innerHTML = sessionData.session ? 
+                    `<strong>${sessionData.session.name}</strong><br><small>${sessionData.session.description}</small>` : 
+                    '<span class="text-muted">无活动会话</span>';
+                
+                // 获取设备统计
+                const devicesResponse = await fetch(`${API_BASE}/devices`);
+                const devicesResult = await devicesResponse.json();
+                const devices = devicesResult.success ? devicesResult.data : [];
+                const interactiveDevices = devices.filter(d => d.type.includes('INTERACTIVE'));
+                
+                document.getElementById('device-stats').innerHTML = 
+                    `互动教学设备: <strong>${interactiveDevices.length}</strong><br>` +
+                    `<small>控制器: ${interactiveDevices.filter(d => d.type === 'INTERACTIVE_CONTROLLER').length}, ` +
+                    `显示器: ${interactiveDevices.filter(d => d.type === 'INTERACTIVE_DISPLAY').length}, ` +
+                    `学生终端: ${interactiveDevices.filter(d => d.type === 'INTERACTIVE_STUDENT_TERMINAL').length}</small>`;
+                
+            } catch (error) {
+                console.error('Failed to update system status:', error);
+            }
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            generateSeatGrid();
+            updateSystemStatus();
+            refreshSeats();
+            
+            // 每10秒自动刷新座位状态
+            setInterval(() => {
+                refreshSeats();
+                updateSystemStatus();
+            }, 10000);
+        });
+    </script>
+</body>
+</html>

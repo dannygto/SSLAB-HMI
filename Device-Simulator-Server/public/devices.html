@@ -137,6 +137,9 @@
                         <option value="CURTAIN_CONTROLLER">窗帘控制</option>
                         <option value="LIGHTING_CONTROLLER">灯光控制</option>
                         <option value="LIFT_CONTROLLER">升降控制</option>
+                        <option value="INTERACTIVE_STUDENT_TERMINAL">互动学生终端</option>
+                        <option value="INTERACTIVE_DISPLAY">互动教学显示器</option>
+                        <option value="INTERACTIVE_CONTROLLER">互动教学控制器</option>
                     </select>
                 </div>
                 <div class="filter-select-status">
@@ -245,6 +248,9 @@
                                 <option value="CURTAIN_CONTROLLER">窗帘控制装置</option>
                                 <option value="LIGHTING_CONTROLLER">灯光控制装置</option>
                                 <option value="LIFT_CONTROLLER">升降控制装置</option>
+                                <option value="INTERACTIVE_STUDENT_TERMINAL">互动教学学生终端</option>
+                                <option value="INTERACTIVE_DISPLAY">互动教学显示设备</option>
+                                <option value="INTERACTIVE_CONTROLLER">互动教学控制器</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -712,12 +718,15 @@
             const confirm = window.confirm('确定要添加测试设备吗？这将创建4种不同类型的ESP8266设备，每种类型2个设备。');
             if (!confirm) return;
 
-            const deviceTypes = ['ENVIRONMENT_MONITOR', 'STUDENT_POWER_TERMINAL', 'ENVIRONMENT_CONTROLLER', 'CURTAIN_CONTROLLER'];
+            const deviceTypes = ['ENVIRONMENT_MONITOR', 'STUDENT_POWER_TERMINAL', 'ENVIRONMENT_CONTROLLER', 'CURTAIN_CONTROLLER', 'INTERACTIVE_STUDENT_TERMINAL', 'INTERACTIVE_DISPLAY', 'INTERACTIVE_CONTROLLER'];
             const deviceNames = {
                 ENVIRONMENT_MONITOR: '环境检测装置',
                 STUDENT_POWER_TERMINAL: '学生电源终端',
                 ENVIRONMENT_CONTROLLER: '环境控制装置',
-                CURTAIN_CONTROLLER: '窗帘控制装置'
+                CURTAIN_CONTROLLER: '窗帘控制装置',
+                INTERACTIVE_STUDENT_TERMINAL: '互动教学学生终端',
+                INTERACTIVE_DISPLAY: '互动教学显示设备',
+                INTERACTIVE_CONTROLLER: '互动教学控制器'
             };
 
             try {
@@ -853,7 +862,10 @@
                 'ENVIRONMENT_CONTROLLER': '环境控制装置',
                 'CURTAIN_CONTROLLER': '窗帘控制装置',
                 'LIGHTING_CONTROLLER': '灯光控制装置',
-                'LIFT_CONTROLLER': '升降控制装置'
+                'LIFT_CONTROLLER': '升降控制装置',
+                'INTERACTIVE_STUDENT_TERMINAL': '互动教学学生终端',
+                'INTERACTIVE_DISPLAY': '互动教学显示设备',
+                'INTERACTIVE_CONTROLLER': '互动教学控制器'
             };
             return names[type] || type;
         }
@@ -1006,7 +1018,31 @@
                 'green': '绿色',
                 'blue': '蓝色',
                 'fadeTime': '渐变时间',
-                'strobeFrequency': '频闪频率'
+                'strobeFrequency': '频闪频率',
+                
+                // 互动教学设备专用属性
+                'statistics': '统计数据',
+                'currentQuestionId': '当前题目ID',
+                'questionContent': '题目内容',
+                'options': '选项',
+                'timeRemaining': '剩余时间',
+                'isActive': '活跃状态',
+                'totalStudents': '学生总数',
+                'answered': '已答题数',
+                'correct': '正确答案数',
+                'incorrect': '错误答案数',
+                'timeout': '超时数量',
+                'session': '会话信息',
+                'startTime': '开始时间',
+                'timeLimit': '时间限制',
+                'autoNext': '自动下一题',
+                'seatId': '座位编号',
+                'studentName': '学生姓名',
+                'status': '状态',
+                'lastAnswer': '最后答案',
+                'answerTime': '答题时间',
+                'displayMode': '显示模式',
+                'isFullscreen': '全屏状态'
             };
             return names[property] || property;
         }

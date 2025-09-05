@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cn.sslab.hmi.ui.theme.BlueGradientBrushes
@@ -239,37 +240,79 @@ fun MainWelcomeScreen(
                     color = BlueGradientColors.PrimaryText
                 )
 
-                // 主要功能区域 - 2x2网格
-                Row(
+                // 核心功能区域 - 重新设计为突出主要功能
+                Column(
                     modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
+                    // 顶部次要功能工具栏 - 小图标导航
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = BlueGradientColors.SurfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "系统工具",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = BlueGradientColors.PrimaryText,
+                                fontWeight = FontWeight.Medium
+                            )
+                            
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // 设备管理小图标
+                                SecondaryIconButton(
+                                    icon = Icons.Default.Devices,
+                                    label = "设备管理",
+                                    onClick = onNavigateToDeviceList
+                                )
+                                
+                                // 教室配置小图标
+                                SecondaryIconButton(
+                                    icon = Icons.Default.School,
+                                    label = "教室配置",
+                                    onClick = onNavigateToClassroomConfig
+                                )
+                                
+                                // 系统工具小图标
+                                SecondaryIconButton(
+                                    icon = Icons.Default.Settings,
+                                    label = "系统工具",
+                                    onClick = onNavigateToApiTest
+                                )
+                                
+                                // 服务器连接小图标
+                                SecondaryIconButton(
+                                    icon = Icons.Default.Link,
+                                    label = "服务器连接",
+                                    onClick = onNavigateToServerConnection
+                                )
+                            }
+                        }
+                    }
+                    
+                    // 主要功能区域 - 1x3 大卡片布局
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // 设备管理 - 使用主蓝色渐变
+                        // 教学电源 - 主要功能1
                         FunctionCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f),
-                            title = "设备管理",
-                            description = "设备发现、状态监控\n设备列表管理",
-                            icon = Icons.Default.Devices,
-                            gradientColors = listOf(
-                                BlueGradientColors.DeepBlue,
-                                BlueGradientColors.MediumBlue
-                            ),
-                            onClick = onNavigateToDeviceList
-                        )
-
-                        // 教学电源 - 使用辅助蓝色渐变
-                        FunctionCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            title = "教学电源",
-                            description = "电源控制管理\n学生分组设置",
+                                .height(100.dp),
+                            title = "教学电源管理",
+                            description = "电源控制管理、学生分组设置、设备开关控制",
                             icon = Icons.Default.Power,
                             gradientColors = listOf(
                                 BlueGradientColors.SkyBlue,
@@ -278,13 +321,13 @@ fun MainWelcomeScreen(
                             onClick = onNavigateToTeachingPower
                         )
 
-                        // 环境监测 - 使用绿色渐变
+                        // 环境监测 - 主要功能2
                         FunctionCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f),
-                            title = "环境监测",
-                            description = "温湿度监控\nCO2/PM2.5检测",
+                                .height(100.dp),
+                            title = "环境监测系统",
+                            description = "温湿度监控、CO2/PM2.5检测、实时数据展示",
                             icon = Icons.Default.Nature,
                             gradientColors = listOf(
                                 BlueGradientColors.TealGreen,
@@ -293,13 +336,13 @@ fun MainWelcomeScreen(
                             onClick = onNavigateToEnvironment
                         )
                         
-                        // 互动教学 - 使用紫色渐变
+                        // 互动教学 - 主要功能3
                         FunctionCard(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f),
-                            title = "互动教学",
-                            description = "在线答题系统\n实时统计分析",
+                                .height(100.dp),
+                            title = "互动教学平台",
+                            description = "在线答题系统、实时统计分析、学生互动管理",
                             icon = Icons.Default.Quiz,
                             gradientColors = listOf(
                                 BlueGradientColors.DeepBlue,
@@ -308,93 +351,48 @@ fun MainWelcomeScreen(
                             onClick = onNavigateToInteractiveTeaching
                         )
                     }
-
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // 教室配置 - 使用青绿色渐变
-                        FunctionCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            title = "教室配置",
-                            description = "教室布局设置\n设备分组管理",
-                            icon = Icons.Default.School,
-                            gradientColors = listOf(
-                                BlueGradientColors.TealGreen,
-                                BlueGradientColors.Green
-                            ),
-                            onClick = onNavigateToClassroomConfig
-                        )
-
-                        // 系统工具 - 使用中性灰蓝色渐变
-                        FunctionCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            title = "系统工具",
-                            description = "API测试工具\n服务器连接",
-                            icon = Icons.Default.Settings,
-                            gradientColors = listOf(
-                                BlueGradientColors.MediumGray,
-                                BlueGradientColors.LightGray
-                            ),
-                            onClick = onNavigateToApiTest
-                        )
-                    }
                 }
 
-                // 底部快捷操作 - 使用蓝色渐变按钮
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = onNavigateToServerConnection,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = BlueGradientColors.MediumBlue
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp, 
-                            BlueGradientColors.MediumBlue
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Link,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = BlueGradientColors.MediumBlue
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("服务器连接", color = BlueGradientColors.MediumBlue)
-                    }
-                    
-                    OutlinedButton(
-                        onClick = onNavigateToApiTest,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = BlueGradientColors.SkyBlue
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp, 
-                            BlueGradientColors.SkyBlue
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.BugReport,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = BlueGradientColors.SkyBlue
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("API测试", color = BlueGradientColors.SkyBlue)
-                    }
-                }
             }
         }
     }
+}
+
+@Composable
+private fun SecondaryIconButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    BlueGradientColors.Primary.copy(alpha = 0.1f),
+                    CircleShape
+                )
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = BlueGradientColors.Primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = BlueGradientColors.SecondaryText,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            maxLines = 1
+        )
+    }
+}
 }
 
 @Composable

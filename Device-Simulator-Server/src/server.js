@@ -96,6 +96,16 @@ class DeviceSimulatorServer {
             res.sendFile(path.join(__dirname, '../public/admin.html'));
         });
         
+        // 互动教学测试页面
+        this.app.get('/interactive-teaching', (req, res) => {
+            res.sendFile(path.join(__dirname, '../public/interactive-teaching.html'));
+        });
+        
+        // API文档页面
+        this.app.get('/api-docs', (req, res) => {
+            res.sendFile(path.join(__dirname, '../public/api-docs.html'));
+        });
+        
         // 导航栏组件路由
         this.app.get('/components/navbar.html', (req, res) => {
             res.sendFile(path.join(__dirname, '../public/components/navbar.html'));

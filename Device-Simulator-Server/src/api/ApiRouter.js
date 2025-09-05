@@ -10,7 +10,21 @@ class ApiRouter {
         this.deviceManager = deviceManager;
         this.server = server; // 服务器实例，用于获取连接数等信息
         this.router = express.Router();
+        
+        // 初始化互动教学系统管理器
+        this.interactiveManager = {
+            sessions: new Map(),
+            questions: new Map(),
+            students: new Map(), // seatId -> studentInfo
+            currentSession: null,
+            currentQuestion: null,
+            lastCreatedQuestion: null, // 最后创建的问题ID
+            answers: new Map(), // questionId -> [answers]
+            statistics: new Map() // questionId -> statistics
+        };
+        
         this.setupRoutes();
+        this.initializeInteractiveSystem();
     }
     
     /**
@@ -51,6 +65,36 @@ class ApiRouter {
         this.router.post('/system/clear', this.clearDevices.bind(this));
         this.router.get('/system/health', this.getSystemHealth.bind(this));
         this.router.post('/system/create-test-devices', this.createTestDevices.bind(this));
+        
+        // 互动教学系统路由
+        this.router.get('/interactive/sessions', this.getInteractiveSessions.bind(this));
+        this.router.post('/interactive/sessions', this.createInteractiveSession.bind(this));
+        this.router.get('/interactive/sessions/current', this.getCurrentSession.bind(this));
+        this.router.get('/interactive/sessions/:sessionId', this.getInteractiveSession.bind(this));
+        this.router.post('/interactive/sessions/:sessionId/start', this.startInteractiveSession.bind(this));
+        this.router.post('/interactive/sessions/:sessionId/stop', this.stopInteractiveSession.bind(this));
+        this.router.delete('/interactive/sessions/:sessionId', this.deleteInteractiveSession.bind(this));
+        this.router.delete('/interactive/sessions/current', this.endCurrentSession.bind(this));
+        this.router.post('/interactive/sessions/clear', this.clearSessionData.bind(this));
+        
+        this.router.get('/interactive/questions', this.getQuestions.bind(this));
+        this.router.post('/interactive/questions', this.createQuestion.bind(this));
+        this.router.get('/interactive/questions/current', this.getCurrentQuestion.bind(this));
+        this.router.get('/interactive/questions/:questionId', this.getQuestion.bind(this));
+        this.router.put('/interactive/questions/:questionId', this.updateQuestion.bind(this));
+        this.router.delete('/interactive/questions/:questionId', this.deleteQuestion.bind(this));
+        this.router.post('/interactive/questions/publish', this.publishLatestQuestion.bind(this));
+        this.router.post('/interactive/questions/:questionId/publish', this.publishQuestion.bind(this));
+        this.router.post('/interactive/questions/stop', this.stopCurrentQuestion.bind(this));
+        
+        this.router.get('/interactive/students', this.getStudents.bind(this));
+        this.router.post('/interactive/students', this.assignStudent.bind(this));
+        this.router.delete('/interactive/students/:seatId', this.removeStudent.bind(this));
+        this.router.post('/interactive/students/:seatId/answer', this.submitAnswer.bind(this));
+        
+        this.router.get('/interactive/statistics', this.getInteractiveStatistics.bind(this));
+        this.router.get('/interactive/statistics/:questionId', this.getQuestionStatistics.bind(this));
+        this.router.post('/interactive/statistics/clear', this.clearInteractiveStatistics.bind(this));
         
         // API文档和设备类型信息路由
         this.router.get('/info/device-types', this.getDeviceTypes.bind(this));
@@ -612,7 +656,10 @@ class ApiRouter {
                     [DeviceType.ENVIRONMENT_CONTROLLER]: '环境控制',
                     [DeviceType.CURTAIN_CONTROLLER]: '窗帘控制',
                     [DeviceType.LIGHTING_CONTROLLER]: '灯光控制',
-                    [DeviceType.LIFT_CONTROLLER]: '升降控制'
+                    [DeviceType.LIFT_CONTROLLER]: '升降控制',
+                    [DeviceType.INTERACTIVE_STUDENT_TERMINAL]: '互动终端',
+                    [DeviceType.INTERACTIVE_DISPLAY]: '互动显示',
+                    [DeviceType.INTERACTIVE_CONTROLLER]: '互动控制'
                 };
                 
                 const deviceName = `${deviceTypeNames[deviceType]}_${String(i + 1).padStart(3, '0')}`;
@@ -857,6 +904,109 @@ class ApiRouter {
                             body: { deviceCount: 'number(default:100)', groupCount: 'number(default:4)' },
                             response: { success: 'boolean', message: 'string', data: 'object' }
                         }
+                    },
+                    interactive: {
+                        'GET /interactive/sessions': {
+                            description: '获取所有互动教学会话',
+                            response: { success: 'boolean', data: 'array' }
+                        },
+                        'POST /interactive/sessions': {
+                            description: '创建新的互动教学会话',
+                            body: { name: 'string', description: 'string(optional)', timeLimit: 'number(optional)' },
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'GET /interactive/sessions/:sessionId': {
+                            description: '获取特定会话信息',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'POST /interactive/sessions/:sessionId/start': {
+                            description: '开始互动教学会话',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'POST /interactive/sessions/:sessionId/stop': {
+                            description: '停止互动教学会话',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'DELETE /interactive/sessions/:sessionId': {
+                            description: '删除互动教学会话',
+                            response: { success: 'boolean', message: 'string' }
+                        },
+                        'GET /interactive/sessions/current': {
+                            description: '获取当前活动会话',
+                            response: { success: 'boolean', session: 'object|null', message: 'string(optional)' }
+                        },
+                        'DELETE /interactive/sessions/current': {
+                            description: '结束当前活动会话',
+                            response: { success: 'boolean', message: 'string' }
+                        },
+                        'POST /interactive/sessions/clear': {
+                            description: '清空所有会话数据',
+                            response: { success: 'boolean', message: 'string' }
+                        },
+                        'GET /interactive/questions': {
+                            description: '获取所有题目',
+                            response: { success: 'boolean', data: 'array' }
+                        },
+                        'POST /interactive/questions': {
+                            description: '创建新题目',
+                            body: { content: 'string', options: 'array', correctAnswer: 'string', timeLimit: 'number(optional)', difficulty: 'string(optional)' },
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'GET /interactive/questions/:questionId': {
+                            description: '获取特定题目信息',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'PUT /interactive/questions/:questionId': {
+                            description: '更新题目',
+                            body: { content: 'string(optional)', options: 'array(optional)', correctAnswer: 'string(optional)', timeLimit: 'number(optional)', difficulty: 'string(optional)' },
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'DELETE /interactive/questions/:questionId': {
+                            description: '删除题目',
+                            response: { success: 'boolean', message: 'string' }
+                        },
+                        'POST /interactive/questions/:questionId/publish': {
+                            description: '发布题目给学生答题',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'GET /interactive/questions/current': {
+                            description: '获取当前发布的题目',
+                            response: { success: 'boolean', question: 'object|null', message: 'string(optional)' }
+                        },
+                        'POST /interactive/questions/stop': {
+                            description: '停止当前题目答题',
+                            response: { success: 'boolean', message: 'string', questionId: 'string(optional)' }
+                        },
+                        'GET /interactive/students': {
+                            description: '获取所有学生座位状态',
+                            response: { success: 'boolean', data: 'array' }
+                        },
+                        'POST /interactive/students': {
+                            description: '分配学生到座位',
+                            body: { seatId: 'string', studentName: 'string' },
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'DELETE /interactive/students/:seatId': {
+                            description: '移除座位上的学生',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'POST /interactive/students/:seatId/answer': {
+                            description: '提交学生答案',
+                            body: { answer: 'string' },
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'GET /interactive/statistics': {
+                            description: '获取互动教学系统统计信息',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'GET /interactive/statistics/:questionId': {
+                            description: '获取特定题目的统计信息',
+                            response: { success: 'boolean', data: 'object' }
+                        },
+                        'POST /interactive/statistics/clear': {
+                            description: '清空所有统计信息',
+                            response: { success: 'boolean', message: 'string' }
+                        }
                     }
                 },
                 examples: {
@@ -898,6 +1048,43 @@ class ApiRouter {
                             name: 'A区实验室',
                             description: 'A区实验室设备分组'
                         }
+                    },
+                    createInteractiveSession: {
+                        url: 'POST /api/interactive/sessions',
+                        body: {
+                            name: '数学基础测试',
+                            description: '小学数学基础题目测试',
+                            timeLimit: 300
+                        }
+                    },
+                    createQuestion: {
+                        url: 'POST /api/interactive/questions',
+                        body: {
+                            content: '3 + 5 = ?',
+                            options: ['6', '7', '8', '9'],
+                            correctAnswer: '8',
+                            timeLimit: 30,
+                            difficulty: 'EASY'
+                        }
+                    },
+                    publishQuestion: {
+                        url: 'POST /api/interactive/questions/q1/publish'
+                    },
+                    assignStudent: {
+                        url: 'POST /api/interactive/students',
+                        body: {
+                            seatId: 'A1',
+                            studentName: '张三'
+                        }
+                    },
+                    submitAnswer: {
+                        url: 'POST /api/interactive/students/A1/answer',
+                        body: {
+                            answer: '8'
+                        }
+                    },
+                    getStatistics: {
+                        url: 'GET /api/interactive/statistics'
                     }
                 }
             };
@@ -921,7 +1108,10 @@ class ApiRouter {
             [DeviceType.ENVIRONMENT_CONTROLLER]: '环境控制装置',
             [DeviceType.CURTAIN_CONTROLLER]: '窗帘控制装置',
             [DeviceType.LIGHTING_CONTROLLER]: '灯光控制装置',
-            [DeviceType.LIFT_CONTROLLER]: '升降控制装置'
+            [DeviceType.LIFT_CONTROLLER]: '升降控制装置',
+            [DeviceType.INTERACTIVE_STUDENT_TERMINAL]: '互动教学学生终端',
+            [DeviceType.INTERACTIVE_DISPLAY]: '互动教学显示设备',
+            [DeviceType.INTERACTIVE_CONTROLLER]: '互动教学控制器'
         };
         return names[type] || type;
     }
@@ -936,7 +1126,10 @@ class ApiRouter {
             [DeviceType.ENVIRONMENT_CONTROLLER]: '供水排风环境控制装置',
             [DeviceType.CURTAIN_CONTROLLER]: '窗帘自动控制装置',
             [DeviceType.LIGHTING_CONTROLLER]: '教室灯光调节控制装置',
-            [DeviceType.LIFT_CONTROLLER]: '实验台升降控制装置'
+            [DeviceType.LIFT_CONTROLLER]: '实验台升降控制装置',
+            [DeviceType.INTERACTIVE_STUDENT_TERMINAL]: '学生互动答题终端设备',
+            [DeviceType.INTERACTIVE_DISPLAY]: '互动教学大屏显示设备',
+            [DeviceType.INTERACTIVE_CONTROLLER]: '互动教学系统控制器'
         };
         return descriptions[type] || '';
     }
@@ -1113,6 +1306,1173 @@ class ApiRouter {
                 success: false,
                 error: '分配设备到分组失败',
                 details: error.message
+            });
+        }
+    }
+
+    /**
+     * 初始化互动教学系统
+     */
+    initializeInteractiveSystem() {
+        // 创建默认题目库
+        const defaultQuestions = [
+            {
+                id: 'q1',
+                content: '3 + 5 = ?',
+                options: ['6', '7', '8', '9'],
+                correctAnswer: '8',
+                timeLimit: 30,
+                difficulty: 'MEDIUM',
+                createTime: Date.now()
+            },
+            {
+                id: 'q2',
+                content: '下列哪个字是形声字？',
+                options: ['山', '河', '火', '土'],
+                correctAnswer: '河',
+                timeLimit: 45,
+                difficulty: 'MEDIUM',
+                createTime: Date.now()
+            },
+            {
+                id: 'q3',
+                content: 'Apple的中文意思是？',
+                options: ['香蕉', '苹果', '橙子', '梨'],
+                correctAnswer: '苹果',
+                timeLimit: 20,
+                difficulty: 'EASY',
+                createTime: Date.now()
+            },
+            {
+                id: 'q4',
+                content: '地球围绕什么转动？',
+                options: ['月亮', '太阳', '火星', '金星'],
+                correctAnswer: '太阳',
+                timeLimit: 25,
+                difficulty: 'EASY',
+                createTime: Date.now()
+            },
+            {
+                id: 'q5',
+                content: '中国的首都是？',
+                options: ['上海', '广州', '北京', '深圳'],
+                correctAnswer: '北京',
+                timeLimit: 15,
+                difficulty: 'EASY',
+                createTime: Date.now()
+            }
+        ];
+
+        defaultQuestions.forEach(question => {
+            this.interactiveManager.questions.set(question.id, question);
+        });
+
+        // 初始化16个座位 (A1-D4)
+        const rows = ['A', 'B', 'C', 'D'];
+        for (const row of rows) {
+            for (let col = 1; col <= 4; col++) {
+                const seatId = `${row}${col}`;
+                this.interactiveManager.students.set(seatId, {
+                    seatId,
+                    studentName: null,
+                    status: 'EMPTY',
+                    lastAnswer: null,
+                    responseTime: null,
+                    isCorrect: null,
+                    assignTime: null
+                });
+            }
+        }
+
+        // 创建默认的互动教学设备
+        this.createInteractiveDevices();
+
+        console.log('📚 互动教学系统已初始化');
+    }
+
+    /**
+     * 创建互动教学设备
+     */
+    createInteractiveDevices() {
+        try {
+            // 创建互动教学分组
+            const interactiveGroupId = 'interactive-teaching';
+            this.deviceManager.addGroup(interactiveGroupId, '互动教学系统', '互动教学相关设备分组');
+
+            // 创建互动教学控制器
+            const controller = this.deviceManager.addDevice({
+                name: '互动教学主控制器',
+                type: DeviceType.INTERACTIVE_CONTROLLER,
+                groupId: interactiveGroupId,
+                config: {
+                    autoStart: true,
+                    isActive: false,
+                    currentQuestionId: null,
+                    startTime: null,
+                    timeLimit: 0,
+                    autoNext: false,
+                    totalQuestions: 0,
+                    currentIndex: 0,
+                    questionBank: [],
+                    connectedTerminals: 0,
+                    maxTerminals: 16,
+                    signalQuality: 'excellent'
+                }
+            });
+
+            // 创建互动教学显示设备
+            const display = this.deviceManager.addDevice({
+                name: '互动教学大屏显示器',
+                type: DeviceType.INTERACTIVE_DISPLAY,
+                groupId: interactiveGroupId,
+                config: {
+                    autoStart: true,
+                    currentQuestionId: null,
+                    questionContent: '',
+                    options: [],
+                    timeRemaining: 0,
+                    isActive: false,
+                    brightness: 90,
+                    resolution: '1920x1080',
+                    totalStudents: 0,
+                    answered: 0,
+                    correct: 0,
+                    incorrect: 0,
+                    timeout: 0
+                }
+            });
+
+            // 创建16个学生终端设备 (A1-D4)
+            const rows = ['A', 'B', 'C', 'D'];
+            for (const row of rows) {
+                for (let col = 1; col <= 4; col++) {
+                    const seatId = `${row}${col}`;
+                    const terminal = this.deviceManager.addDevice({
+                        name: `学生终端-${seatId}`,
+                        type: DeviceType.INTERACTIVE_STUDENT_TERMINAL,
+                        groupId: interactiveGroupId,
+                        config: {
+                            autoStart: true,
+                            seatId: seatId,
+                            studentName: null,
+                            status: 'EMPTY',
+                            currentQuestionId: null,
+                            selectedAnswer: null,
+                            submitTime: null,
+                            responseTime: null,
+                            isCorrect: null,
+                            screenOn: true,
+                            buttonLights: { A: false, B: false, C: false, D: false },
+                            buzzer: false,
+                            networkSignal: 80 + Math.random() * 20
+                        }
+                    });
+
+                    if (terminal && terminal.config?.autoStart) {
+                        this.deviceManager.startDevice(terminal.id);
+                    }
+                }
+            }
+
+            if (controller && controller.config?.autoStart) {
+                this.deviceManager.startDevice(controller.id);
+            }
+
+            if (display && display.config?.autoStart) {
+                this.deviceManager.startDevice(display.id);
+            }
+
+            console.log('🎯 互动教学设备已创建：1个控制器，1个显示器，16个学生终端');
+
+        } catch (error) {
+            console.error('创建互动教学设备失败:', error);
+        }
+    }
+
+    // ==================== 互动教学API方法 ====================
+
+    /**
+     * 获取所有会话
+     */
+    async getInteractiveSessions(req, res) {
+        try {
+            const sessions = Array.from(this.interactiveManager.sessions.values());
+            res.json({
+                success: true,
+                data: sessions
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 创建新会话
+     */
+    async createInteractiveSession(req, res) {
+        try {
+            const { name, description, timeLimit } = req.body;
+            
+            if (!name) {
+                return res.status(400).json({
+                    success: false,
+                    error: '会话名称为必填项'
+                });
+            }
+
+            const sessionId = 's' + Date.now();
+            const session = {
+                id: sessionId,
+                name,
+                description: description || '',
+                timeLimit: timeLimit || 300, // 默认5分钟
+                isActive: false,
+                currentQuestionId: null,
+                startTime: null,
+                endTime: null,
+                createTime: Date.now(),
+                questions: [],
+                totalAnswers: 0
+            };
+
+            this.interactiveManager.sessions.set(sessionId, session);
+
+            res.json({
+                success: true,
+                data: session,
+                message: '会话创建成功'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 获取特定会话
+     */
+    async getInteractiveSession(req, res) {
+        try {
+            const sessionId = req.params.sessionId;
+            const session = this.interactiveManager.sessions.get(sessionId);
+            
+            if (!session) {
+                return res.status(404).json({
+                    success: false,
+                    error: '会话不存在'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: session
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 开始会话
+     */
+    async startInteractiveSession(req, res) {
+        try {
+            const sessionId = req.params.sessionId;
+            const session = this.interactiveManager.sessions.get(sessionId);
+            
+            if (!session) {
+                return res.status(404).json({
+                    success: false,
+                    error: '会话不存在'
+                });
+            }
+
+            if (session.isActive) {
+                return res.status(400).json({
+                    success: false,
+                    error: '会话已经在进行中'
+                });
+            }
+
+            session.isActive = true;
+            session.startTime = Date.now();
+            this.interactiveManager.currentSession = sessionId;
+
+            res.json({
+                success: true,
+                data: session,
+                message: '会话已开始'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 停止会话
+     */
+    async stopInteractiveSession(req, res) {
+        try {
+            const sessionId = req.params.sessionId;
+            const session = this.interactiveManager.sessions.get(sessionId);
+            
+            if (!session) {
+                return res.status(404).json({
+                    success: false,
+                    error: '会话不存在'
+                });
+            }
+
+            session.isActive = false;
+            session.endTime = Date.now();
+            session.currentQuestionId = null;
+            this.interactiveManager.currentSession = null;
+            this.interactiveManager.currentQuestion = null;
+
+            res.json({
+                success: true,
+                data: session,
+                message: '会话已停止'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 删除会话
+     */
+    async deleteInteractiveSession(req, res) {
+        try {
+            const sessionId = req.params.sessionId;
+            const session = this.interactiveManager.sessions.get(sessionId);
+            
+            if (!session) {
+                return res.status(404).json({
+                    success: false,
+                    error: '会话不存在'
+                });
+            }
+
+            if (session.isActive) {
+                return res.status(400).json({
+                    success: false,
+                    error: '无法删除正在进行的会话'
+                });
+            }
+
+            this.interactiveManager.sessions.delete(sessionId);
+
+            res.json({
+                success: true,
+                message: '会话已删除'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 获取所有题目
+     */
+    async getQuestions(req, res) {
+        try {
+            const questions = Array.from(this.interactiveManager.questions.values());
+            res.json({
+                success: true,
+                data: questions
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 创建新题目
+     */
+    async createQuestion(req, res) {
+        try {
+            const { content, options, correctAnswer, timeLimit, difficulty } = req.body;
+            
+            if (!content || !options || !correctAnswer) {
+                return res.status(400).json({
+                    success: false,
+                    error: '题目内容、选项和正确答案为必填项'
+                });
+            }
+
+            if (!Array.isArray(options) || options.length < 2) {
+                return res.status(400).json({
+                    success: false,
+                    error: '选项必须是包含至少2个选项的数组'
+                });
+            }
+
+            if (!options.includes(correctAnswer)) {
+                return res.status(400).json({
+                    success: false,
+                    error: '正确答案必须是选项中的一个'
+                });
+            }
+
+            const questionId = 'q' + Date.now();
+            const question = {
+                id: questionId,
+                content,
+                options,
+                correctAnswer,
+                timeLimit: timeLimit || 30,
+                difficulty: difficulty || 'MEDIUM',
+                createTime: Date.now()
+            };
+
+            this.interactiveManager.questions.set(questionId, question);
+            this.interactiveManager.lastCreatedQuestion = questionId; // 保存最后创建的问题ID
+
+            res.json({
+                success: true,
+                data: question,
+                message: '题目创建成功'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 获取特定题目
+     */
+    async getQuestion(req, res) {
+        try {
+            const questionId = req.params.questionId;
+            const question = this.interactiveManager.questions.get(questionId);
+            
+            if (!question) {
+                return res.status(404).json({
+                    success: false,
+                    error: '题目不存在'
+                });
+            }
+
+            res.json({
+                success: true,
+                data: question
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 更新题目
+     */
+    async updateQuestion(req, res) {
+        try {
+            const questionId = req.params.questionId;
+            const question = this.interactiveManager.questions.get(questionId);
+            
+            if (!question) {
+                return res.status(404).json({
+                    success: false,
+                    error: '题目不存在'
+                });
+            }
+
+            const { content, options, correctAnswer, timeLimit, difficulty } = req.body;
+
+            if (content) question.content = content;
+            if (options) {
+                if (!Array.isArray(options) || options.length < 2) {
+                    return res.status(400).json({
+                        success: false,
+                        error: '选项必须是包含至少2个选项的数组'
+                    });
+                }
+                question.options = options;
+            }
+            if (correctAnswer) {
+                if (!question.options.includes(correctAnswer)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: '正确答案必须是选项中的一个'
+                    });
+                }
+                question.correctAnswer = correctAnswer;
+            }
+            if (timeLimit) question.timeLimit = timeLimit;
+            if (difficulty) question.difficulty = difficulty;
+
+            question.updateTime = Date.now();
+
+            res.json({
+                success: true,
+                data: question,
+                message: '题目更新成功'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 删除题目
+     */
+    async deleteQuestion(req, res) {
+        try {
+            const questionId = req.params.questionId;
+            const question = this.interactiveManager.questions.get(questionId);
+            
+            if (!question) {
+                return res.status(404).json({
+                    success: false,
+                    error: '题目不存在'
+                });
+            }
+
+            // 检查题目是否正在使用
+            if (this.interactiveManager.currentQuestion === questionId) {
+                return res.status(400).json({
+                    success: false,
+                    error: '无法删除正在使用的题目'
+                });
+            }
+
+            this.interactiveManager.questions.delete(questionId);
+            this.interactiveManager.answers.delete(questionId);
+            this.interactiveManager.statistics.delete(questionId);
+
+            res.json({
+                success: true,
+                message: '题目已删除'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 发布题目
+     */
+    async publishQuestion(req, res) {
+        try {
+            const questionId = req.params.questionId;
+            const question = this.interactiveManager.questions.get(questionId);
+            
+            if (!question) {
+                return res.status(404).json({
+                    success: false,
+                    error: '题目不存在'
+                });
+            }
+
+            // 设置当前题目
+            this.interactiveManager.currentQuestion = questionId;
+            
+            // 重置所有学生状态为等待中
+            for (const [seatId, student] of this.interactiveManager.students.entries()) {
+                if (student.studentName) {
+                    student.status = 'WAITING';
+                    student.lastAnswer = null;
+                    student.responseTime = null;
+                    student.isCorrect = null;
+                }
+            }
+
+            // 初始化答题记录
+            this.interactiveManager.answers.set(questionId, []);
+            
+            // 更新当前会话
+            if (this.interactiveManager.currentSession) {
+                const session = this.interactiveManager.sessions.get(this.interactiveManager.currentSession);
+                if (session) {
+                    session.currentQuestionId = questionId;
+                }
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    questionId,
+                    question,
+                    startTime: Date.now()
+                },
+                message: '题目已发布'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 发布最后创建的题目
+     */
+    async publishLatestQuestion(req, res) {
+        try {
+            const questionId = this.interactiveManager.lastCreatedQuestion;
+            
+            if (!questionId) {
+                return res.status(400).json({
+                    success: false,
+                    error: '没有可发布的题目，请先创建题目'
+                });
+            }
+
+            const question = this.interactiveManager.questions.get(questionId);
+            
+            if (!question) {
+                return res.status(404).json({
+                    success: false,
+                    error: '题目不存在'
+                });
+            }
+
+            // 设置当前题目
+            this.interactiveManager.currentQuestion = questionId;
+            
+            // 重置所有学生状态为等待中
+            for (const [seatId, student] of this.interactiveManager.students.entries()) {
+                if (student.studentName) {
+                    student.status = 'WAITING';
+                    student.lastAnswer = null;
+                    student.responseTime = null;
+                    student.isCorrect = null;
+                }
+            }
+
+            // 初始化答题记录
+            this.interactiveManager.answers.set(questionId, []);
+            
+            // 更新当前会话
+            if (this.interactiveManager.currentSession) {
+                const session = this.interactiveManager.sessions.get(this.interactiveManager.currentSession);
+                if (session) {
+                    session.currentQuestionId = questionId;
+                }
+            }
+
+            res.json({
+                success: true,
+                data: {
+                    questionId,
+                    question,
+                    startTime: Date.now()
+                },
+                message: '题目已发布'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 获取学生座位状态
+     */
+    async getStudents(req, res) {
+        try {
+            const students = Array.from(this.interactiveManager.students.values());
+            res.json({
+                success: true,
+                data: students
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 分配学生到座位
+     */
+    async assignStudent(req, res) {
+        try {
+            const { seatId, studentName } = req.body;
+            
+            if (!seatId || !studentName) {
+                return res.status(400).json({
+                    success: false,
+                    error: '座位ID和学生姓名为必填项'
+                });
+            }
+
+            const student = this.interactiveManager.students.get(seatId);
+            if (!student) {
+                return res.status(404).json({
+                    success: false,
+                    error: '座位不存在'
+                });
+            }
+
+            student.studentName = studentName;
+            student.status = 'WAITING';
+            student.assignTime = Date.now();
+            student.lastAnswer = null;
+            student.responseTime = null;
+            student.isCorrect = null;
+
+            res.json({
+                success: true,
+                data: student,
+                message: '学生分配成功'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 移除学生
+     */
+    async removeStudent(req, res) {
+        try {
+            const seatId = req.params.seatId;
+            const student = this.interactiveManager.students.get(seatId);
+            
+            if (!student) {
+                return res.status(404).json({
+                    success: false,
+                    error: '座位不存在'
+                });
+            }
+
+            student.studentName = null;
+            student.status = 'EMPTY';
+            student.assignTime = null;
+            student.lastAnswer = null;
+            student.responseTime = null;
+            student.isCorrect = null;
+
+            res.json({
+                success: true,
+                data: student,
+                message: '学生已移除'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 提交答案
+     */
+    async submitAnswer(req, res) {
+        try {
+            const seatId = req.params.seatId;
+            const { answer } = req.body;
+            
+            if (!answer) {
+                return res.status(400).json({
+                    success: false,
+                    error: '答案不能为空'
+                });
+            }
+
+            const student = this.interactiveManager.students.get(seatId);
+            if (!student) {
+                return res.status(404).json({
+                    success: false,
+                    error: '座位不存在'
+                });
+            }
+
+            if (!student.studentName) {
+                return res.status(400).json({
+                    success: false,
+                    error: '该座位没有分配学生'
+                });
+            }
+
+            const currentQuestionId = this.interactiveManager.currentQuestion;
+            if (!currentQuestionId) {
+                return res.status(400).json({
+                    success: false,
+                    error: '当前没有发布题目'
+                });
+            }
+
+            const question = this.interactiveManager.questions.get(currentQuestionId);
+            if (!question) {
+                return res.status(404).json({
+                    success: false,
+                    error: '题目不存在'
+                });
+            }
+
+            const currentTime = Date.now();
+            const responseTime = Math.floor(Math.random() * 10000) + 1000; // 模拟响应时间1-11秒
+            const isCorrect = answer === question.correctAnswer;
+
+            // 创建答题记录
+            const answerRecord = {
+                studentId: student.studentName,
+                seatPosition: seatId,
+                questionId: currentQuestionId,
+                answer,
+                timestamp: currentTime,
+                isCorrect,
+                responseTime
+            };
+
+            // 更新答题记录
+            const answers = this.interactiveManager.answers.get(currentQuestionId) || [];
+            // 移除该学生之前的答题记录
+            const filteredAnswers = answers.filter(a => a.seatPosition !== seatId);
+            filteredAnswers.push(answerRecord);
+            this.interactiveManager.answers.set(currentQuestionId, filteredAnswers);
+
+            // 更新学生状态
+            student.status = isCorrect ? 'CORRECT' : 'INCORRECT';
+            student.lastAnswer = answer;
+            student.responseTime = responseTime;
+            student.isCorrect = isCorrect;
+
+            // 更新统计信息
+            this.updateQuestionStatistics(currentQuestionId);
+
+            res.json({
+                success: true,
+                data: {
+                    answerRecord,
+                    student
+                },
+                message: '答案提交成功'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 获取互动教学统计信息
+     */
+    async getInteractiveStatistics(req, res) {
+        try {
+            const currentQuestionId = this.interactiveManager.currentQuestion;
+            let currentQuestionStats = null;
+
+            if (currentQuestionId) {
+                currentQuestionStats = this.interactiveManager.statistics.get(currentQuestionId);
+            }
+
+            const totalStudents = Array.from(this.interactiveManager.students.values())
+                .filter(s => s.studentName).length;
+
+            const totalQuestions = this.interactiveManager.questions.size;
+            const totalSessions = this.interactiveManager.sessions.size;
+            const activeSessions = Array.from(this.interactiveManager.sessions.values())
+                .filter(s => s.isActive).length;
+
+            res.json({
+                success: true,
+                data: {
+                    currentQuestionId,
+                    currentQuestionStats,
+                    totalStudents,
+                    totalQuestions,
+                    totalSessions,
+                    activeSessions,
+                    students: Array.from(this.interactiveManager.students.values())
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 获取特定题目的统计信息
+     */
+    async getQuestionStatistics(req, res) {
+        try {
+            const questionId = req.params.questionId;
+            const statistics = this.interactiveManager.statistics.get(questionId);
+            
+            if (!statistics) {
+                return res.status(404).json({
+                    success: false,
+                    error: '该题目暂无统计信息'
+                });
+            }
+
+            const answers = this.interactiveManager.answers.get(questionId) || [];
+
+            res.json({
+                success: true,
+                data: {
+                    questionId,
+                    statistics,
+                    answers
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 清空互动教学统计信息
+     */
+    async clearInteractiveStatistics(req, res) {
+        try {
+            this.interactiveManager.answers.clear();
+            this.interactiveManager.statistics.clear();
+            this.interactiveManager.currentQuestion = null;
+
+            // 重置所有学生状态
+            for (const [seatId, student] of this.interactiveManager.students.entries()) {
+                if (student.studentName) {
+                    student.status = 'WAITING';
+                    student.lastAnswer = null;
+                    student.responseTime = null;
+                    student.isCorrect = null;
+                }
+            }
+
+            res.json({
+                success: true,
+                message: '统计信息已清空'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 更新题目统计信息
+     */
+    updateQuestionStatistics(questionId) {
+        const answers = this.interactiveManager.answers.get(questionId) || [];
+        const totalStudents = Array.from(this.interactiveManager.students.values())
+            .filter(s => s.studentName).length;
+
+        const totalAnswered = answers.length;
+        const correctAnswers = answers.filter(a => a.isCorrect).length;
+        const incorrectAnswers = totalAnswered - correctAnswers;
+        const unanswered = totalStudents - totalAnswered;
+
+        const responseTimes = answers.map(a => a.responseTime);
+        const averageResponseTime = responseTimes.length > 0 
+            ? Math.floor(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length)
+            : 0;
+
+        const statistics = {
+            totalAnswered,
+            correctAnswers,
+            incorrectAnswers,
+            unanswered,
+            averageResponseTime,
+            fastestTime: responseTimes.length > 0 ? Math.min(...responseTimes) : 0,
+            slowestTime: responseTimes.length > 0 ? Math.max(...responseTimes) : 0,
+            updateTime: Date.now()
+        };
+
+        this.interactiveManager.statistics.set(questionId, statistics);
+        return statistics;
+    }
+
+    /**
+     * 获取当前会话
+     */
+    async getCurrentSession(req, res) {
+        try {
+            const currentSessionId = this.interactiveManager.currentSession;
+            if (!currentSessionId) {
+                res.json({
+                    success: true,
+                    session: null,
+                    message: '无活动会话'
+                });
+                return;
+            }
+
+            const session = this.interactiveManager.sessions.get(currentSessionId);
+            res.json({
+                success: true,
+                session: session || null
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 结束当前会话
+     */
+    async endCurrentSession(req, res) {
+        try {
+            if (!this.interactiveManager.currentSession) {
+                res.status(404).json({
+                    success: false,
+                    error: '没有活动会话'
+                });
+                return;
+            }
+
+            this.interactiveManager.currentSession = null;
+            this.interactiveManager.currentQuestion = null;
+            
+            res.json({
+                success: true,
+                message: '会话已结束'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 清除会话数据
+     */
+    async clearSessionData(req, res) {
+        try {
+            this.interactiveManager.sessions.clear();
+            this.interactiveManager.questions.clear();
+            this.interactiveManager.answers.clear();
+            this.interactiveManager.statistics.clear();
+            this.interactiveManager.currentSession = null;
+            this.interactiveManager.currentQuestion = null;
+            
+            // 重置学生状态
+            for (const [seatId, student] of this.interactiveManager.students) {
+                if (student.studentName) {
+                    student.status = 'WAITING';
+                    student.lastAnswer = null;
+                    student.responseTime = null;
+                    student.isCorrect = null;
+                }
+            }
+            
+            res.json({
+                success: true,
+                message: '会话数据已清空'
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 获取当前题目
+     */
+    async getCurrentQuestion(req, res) {
+        try {
+            const currentQuestionId = this.interactiveManager.currentQuestion;
+            if (!currentQuestionId) {
+                res.json({
+                    success: true,
+                    question: null,
+                    message: '没有当前题目'
+                });
+                return;
+            }
+
+            const question = this.interactiveManager.questions.get(currentQuestionId);
+            res.json({
+                success: true,
+                question: question || null
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+
+    /**
+     * 停止当前题目
+     */
+    async stopCurrentQuestion(req, res) {
+        try {
+            if (!this.interactiveManager.currentQuestion) {
+                res.status(404).json({
+                    success: false,
+                    error: '没有正在进行的题目'
+                });
+                return;
+            }
+
+            const questionId = this.interactiveManager.currentQuestion;
+            this.interactiveManager.currentQuestion = null;
+            
+            // 更新统计信息
+            this.updateQuestionStatistics(questionId);
+            
+            res.json({
+                success: true,
+                message: '题目已停止',
+                questionId
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                error: error.message
             });
         }
     }

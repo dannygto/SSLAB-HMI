@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API文档 - SSLAB设备模拟器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .api-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #0d6efd;
+        }
+        
+        .api-endpoint {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .method-badge {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-right: 10px;
+        }
+        
+        .method-get { background-color: #d1ecf1; color: #0c5460; }
+        .method-post { background-color: #d4edda; color: #155724; }
+        .method-put { background-color: #fff3cd; color: #856404; }
+        .method-delete { background-color: #f8d7da; color: #721c24; }
+        
+        .endpoint-url {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #dee2e6;
+        }
+        
+        .json-example {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .param-table {
+            font-size: 0.9rem;
+        }
+        
+        .param-table td {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .param-table th {
+            background-color: #f8f9fa;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .toc a {
+            text-decoration: none;
+            color: #0d6efd;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .copy-button:hover {
+            background: #5a6268;
+        }
+        
+        .status-code {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .status-200 { background: #d4edda; color: #155724; }
+        .status-400 { background: #f8d7da; color: #721c24; }
+        .status-404 { background: #f8d7da; color: #721c24; }
+        .status-500 { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <!-- 统一导航栏容器 -->
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <!-- 页面标题 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="text-center">
+                    <h2 class="mb-2">📖 API接口文档</h2>
+                    <p class="text-muted">SSLAB设备模拟器完整API接口参考文档</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 目录 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="toc">
+                    <h4><i class="bi bi-list"></i> 目录</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>基础接口</h6>
+                            <ul>
+                                <li><a href="#devices-api">设备管理API</a></li>
+                                <li><a href="#groups-api">分组管理API</a></li>
+                                <li><a href="#monitor-api">监控API</a></li>
+                                <li><a href="#system-api">系统API</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>互动教学系统</h6>
+                            <ul>
+                                <li><a href="#sessions-api">会话管理API</a></li>
+                                <li><a href="#questions-api">题目管理API</a></li>
+                                <li><a href="#students-api">学生管理API</a></li>
+                                <li><a href="#statistics-api">统计分析API</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 基础信息 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-info-circle"></i> 基础信息</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>服务器信息</h6>
+                            <p><strong>基础URL：</strong> <code>http://localhost:8080</code></p>
+                            <p><strong>API前缀：</strong> <code>/api</code></p>
+                            <p><strong>数据格式：</strong> JSON</p>
+                            <p><strong>字符编码：</strong> UTF-8</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>状态码说明</h6>
+                            <p><span class="status-code status-200">200</span> 请求成功</p>
+                            <p><span class="status-code status-400">400</span> 请求参数错误</p>
+                            <p><span class="status-code status-404">404</span> 资源不存在</p>
+                            <p><span class="status-code status-500">500</span> 服务器内部错误</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设备管理API -->
+        <div class="row mb-4" id="devices-api">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-cpu"></i> 设备管理API</h4>
+                    
+                    <!-- 获取所有设备 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/devices')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取所有设备列表
+                        </h6>
+                        <div class="endpoint-url">GET /api/devices</div>
+                        <p><strong>描述：</strong> 获取系统中所有虚拟设备的列表</p>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">[
+  {
+    "id": "device-001",
+    "name": "环境监测装置-001",
+    "type": "ENVIRONMENT_MONITOR",
+    "location": "实验室A",
+    "status": "online",
+    "lastSeen": "2025-01-04T10:30:00.000Z",
+    "data": {
+      "temperature": 22.5,
+      "humidity": 45.2,
+      "co2": 410,
+      "pm25": 12
+    }
+  }
+]</div>
+                    </div>
+
+                    <!-- 获取单个设备 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/devices/:id')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取指定设备信息
+                        </h6>
+                        <div class="endpoint-url">GET /api/devices/{deviceId}</div>
+                        <p><strong>描述：</strong> 根据设备ID获取特定设备的详细信息</p>
+                        <table class="param-table w-100">
+                            <thead>
+                                <tr>
+                                    <th>参数</th>
+                                    <th>类型</th>
+                                    <th>必需</th>
+                                    <th>描述</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>deviceId</td>
+                                    <td>string</td>
+                                    <td>是</td>
+                                    <td>设备唯一标识符</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 更新设备 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('PUT /api/devices/:id')">复制</button>
+                        <h6>
+                            <span class="method-badge method-put">PUT</span>
+                            更新设备信息
+                        </h6>
+                        <div class="endpoint-url">PUT /api/devices/{deviceId}</div>
+                        <p><strong>描述：</strong> 更新指定设备的配置信息</p>
+                        <p><strong>请求体示例：</strong></p>
+                        <div class="json-example">{
+  "name": "环境监测装置-001-更新",
+  "location": "实验室B",
+  "config": {
+    "sampleRate": 5000,
+    "alertThreshold": {
+      "temperature": 30,
+      "humidity": 70
+    }
+  }
+}</div>
+                    </div>
+
+                    <!-- 控制设备 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/devices/:id/control')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            控制设备操作
+                        </h6>
+                        <div class="endpoint-url">POST /api/devices/{deviceId}/control</div>
+                        <p><strong>描述：</strong> 向设备发送控制指令</p>
+                        <p><strong>请求体示例：</strong></p>
+                        <div class="json-example">{
+  "action": "toggle_power",
+  "parameters": {
+    "outlet": "A1",
+    "state": true
+  }
+}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分组管理API -->
+        <div class="row mb-4" id="groups-api">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-collection"></i> 分组管理API</h4>
+                    
+                    <!-- 获取所有分组 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/groups')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取所有设备分组
+                        </h6>
+                        <div class="endpoint-url">GET /api/groups</div>
+                        <p><strong>描述：</strong> 获取系统中所有设备分组的列表</p>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">[
+  {
+    "id": "group-001",
+    "name": "实验室A设备组",
+    "description": "实验室A区域的所有设备",
+    "devices": ["device-001", "device-002"],
+    "createdAt": "2025-01-04T10:00:00.000Z"
+  }
+]</div>
+                    </div>
+
+                    <!-- 创建分组 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/groups')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            创建新分组
+                        </h6>
+                        <div class="endpoint-url">POST /api/groups</div>
+                        <p><strong>请求体示例：</strong></p>
+                        <div class="json-example">{
+  "name": "新设备分组",
+  "description": "分组描述",
+  "devices": ["device-001", "device-002"]
+}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 互动教学 - 会话管理API -->
+        <div class="row mb-4" id="sessions-api">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-play-circle"></i> 互动教学 - 会话管理API</h4>
+                    
+                    <!-- 创建会话 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/sessions')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            创建新教学会话
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/sessions</div>
+                        <p><strong>描述：</strong> 创建一个新的互动教学会话</p>
+                        <p><strong>请求体示例：</strong></p>
+                        <div class="json-example">{
+  "name": "数学课堂测试",
+  "description": "第三章代数测试",
+  "teacherId": "teacher-001",
+  "settings": {
+    "maxStudents": 16,
+    "allowLateJoin": true
+  }
+}</div>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">{
+  "success": true,
+  "session": {
+    "id": "session-12345",
+    "name": "数学课堂测试",
+    "status": "active",
+    "createdAt": "2025-01-04T10:30:00.000Z"
+  }
+}</div>
+                    </div>
+
+                    <!-- 获取当前会话 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/interactive/sessions/current')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取当前活动会话
+                        </h6>
+                        <div class="endpoint-url">GET /api/interactive/sessions/current</div>
+                        <p><strong>描述：</strong> 获取当前正在进行的教学会话信息</p>
+                    </div>
+
+                    <!-- 结束会话 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('DELETE /api/interactive/sessions/current')">复制</button>
+                        <h6>
+                            <span class="method-badge method-delete">DELETE</span>
+                            结束当前会话
+                        </h6>
+                        <div class="endpoint-url">DELETE /api/interactive/sessions/current</div>
+                        <p><strong>描述：</strong> 结束当前正在进行的教学会话</p>
+                    </div>
+
+                    <!-- 清除会话数据 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/sessions/clear')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            清除会话所有数据
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/sessions/clear</div>
+                        <p><strong>描述：</strong> 清除当前会话的所有数据，包括学生信息、答题记录等</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 互动教学 - 题目管理API -->
+        <div class="row mb-4" id="questions-api">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-question-circle"></i> 互动教学 - 题目管理API</h4>
+                    
+                    <!-- 创建题目 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/questions')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            创建新题目
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/questions</div>
+                        <p><strong>请求体示例：</strong></p>
+                        <div class="json-example">{
+  "text": "1 + 1 等于多少？",
+  "type": "single",
+  "options": {
+    "A": "1",
+    "B": "2", 
+    "C": "3",
+    "D": "4"
+  },
+  "correctAnswer": "B",
+  "timeLimit": 60
+}</div>
+                    </div>
+
+                    <!-- 发布题目 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/questions/publish')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            发布题目开始答题
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/questions/publish</div>
+                        <p><strong>描述：</strong> 将最新创建的题目发布给学生，开始答题倒计时</p>
+                    </div>
+
+                    <!-- 获取当前题目 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/interactive/questions/current')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取当前发布的题目
+                        </h6>
+                        <div class="endpoint-url">GET /api/interactive/questions/current</div>
+                        <p><strong>描述：</strong> 获取当前正在进行答题的题目信息</p>
+                    </div>
+
+                    <!-- 停止答题 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/questions/stop')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            停止当前题目答题
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/questions/stop</div>
+                        <p><strong>描述：</strong> 立即停止当前题目的答题，不等待时间结束</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 互动教学 - 学生管理API -->
+        <div class="row mb-4" id="students-api">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-people"></i> 互动教学 - 学生管理API</h4>
+                    
+                    <!-- 分配学生到座位 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/students/assign')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            分配学生到座位
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/students/assign</div>
+                        <p><strong>请求体示例：</strong></p>
+                        <div class="json-example">{
+  "seatId": "A1",
+  "studentId": "student-001",
+  "name": "张三"
+}</div>
+                    </div>
+
+                    <!-- 学生提交答案 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/students/answer')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            学生提交答案
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/students/answer</div>
+                        <p><strong>请求体示例：</strong></p>
+                        <div class="json-example">{
+  "seatId": "A1",
+  "answer": "B",
+  "answerTime": 30
+}</div>
+                    </div>
+
+                    <!-- 获取学生列表 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/interactive/students')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取所有学生信息
+                        </h6>
+                        <div class="endpoint-url">GET /api/interactive/students</div>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">[
+  {
+    "seatId": "A1",
+    "studentId": "student-001", 
+    "name": "张三",
+    "status": "answered",
+    "lastAnswer": {
+      "questionId": "q-001",
+      "answer": "B",
+      "isCorrect": true,
+      "answerTime": 30,
+      "submittedAt": "2025-01-04T10:35:00.000Z"
+    }
+  }
+]</div>
+                    </div>
+
+                    <!-- 清除所有答案 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('POST /api/interactive/students/clear-answers')">复制</button>
+                        <h6>
+                            <span class="method-badge method-post">POST</span>
+                            清除所有学生答案
+                        </h6>
+                        <div class="endpoint-url">POST /api/interactive/students/clear-answers</div>
+                        <p><strong>描述：</strong> 清除所有学生的答题记录，重置答题状态</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 互动教学 - 统计分析API -->
+        <div class="row mb-4" id="statistics-api">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-bar-chart"></i> 互动教学 - 统计分析API</h4>
+                    
+                    <!-- 答题统计 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/interactive/statistics/answers')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取答题统计
+                        </h6>
+                        <div class="endpoint-url">GET /api/interactive/statistics/answers</div>
+                        <p><strong>描述：</strong> 获取当前题目的详细答题统计信息</p>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">{
+  "questionId": "q-001",
+  "totalStudents": 16,
+  "answeredCount": 12,
+  "answerDistribution": {
+    "A": 2,
+    "B": 8,
+    "C": 1,
+    "D": 1
+  },
+  "correctCount": 8,
+  "averageTime": 35.5
+}</div>
+                    </div>
+
+                    <!-- 参与率统计 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/interactive/statistics/participation-rate')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取参与率
+                        </h6>
+                        <div class="endpoint-url">GET /api/interactive/statistics/participation-rate</div>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">{
+  "participationRate": 75.0,
+  "totalStudents": 16,
+  "participatedStudents": 12
+}</div>
+                    </div>
+
+                    <!-- 正确率统计 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/interactive/statistics/correct-rate')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取正确率
+                        </h6>
+                        <div class="endpoint-url">GET /api/interactive/statistics/correct-rate</div>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">{
+  "correctRate": 66.7,
+  "totalAnswered": 12,
+  "correctAnswers": 8
+}</div>
+                    </div>
+
+                    <!-- 平均答题时间 -->
+                    <div class="api-endpoint">
+                        <button class="copy-button" onclick="copyToClipboard('GET /api/interactive/statistics/average-time')">复制</button>
+                        <h6>
+                            <span class="method-badge method-get">GET</span>
+                            获取平均答题时间
+                        </h6>
+                        <div class="endpoint-url">GET /api/interactive/statistics/average-time</div>
+                        <p><strong>响应示例：</strong></p>
+                        <div class="json-example">{
+  "averageTime": 35.5,
+  "minTime": 15,
+  "maxTime": 58,
+  "totalAnswered": 12
+}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WebSocket API -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-broadcast"></i> WebSocket 实时通信</h4>
+                    
+                    <div class="api-endpoint">
+                        <h6>
+                            <span class="method-badge method-get">WS</span>
+                            WebSocket连接
+                        </h6>
+                        <div class="endpoint-url">WS /</div>
+                        <p><strong>描述：</strong> 建立WebSocket连接以接收实时设备数据和互动教学状态更新</p>
+                        <p><strong>消息格式示例：</strong></p>
+                        <div class="json-example">{
+  "type": "deviceUpdate",
+  "deviceId": "device-001",
+  "data": {
+    "temperature": 23.1,
+    "humidity": 46.5
+  },
+  "timestamp": "2025-01-04T10:40:00.000Z"
+}</div>
+                        <p><strong>互动教学消息示例：</strong></p>
+                        <div class="json-example">{
+  "type": "studentAnswer",
+  "seatId": "A1",
+  "studentId": "student-001",
+  "answer": "B",
+  "isCorrect": true,
+  "timestamp": "2025-01-04T10:45:00.000Z"
+}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 错误响应 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="api-section">
+                    <h4><i class="bi bi-exclamation-triangle"></i> 错误响应格式</h4>
+                    
+                    <div class="api-endpoint">
+                        <h6>标准错误响应</h6>
+                        <p><strong>格式：</strong></p>
+                        <div class="json-example">{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "请求参数验证失败",
+    "details": {
+      "field": "name",
+      "reason": "名称不能为空"
+    }
+  },
+  "timestamp": "2025-01-04T10:50:00.000Z"
+}</div>
+                        
+                        <h6 class="mt-4">常见错误代码</h6>
+                        <table class="param-table w-100">
+                            <thead>
+                                <tr>
+                                    <th>错误代码</th>
+                                    <th>HTTP状态</th>
+                                    <th>描述</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>VALIDATION_ERROR</td>
+                                    <td>400</td>
+                                    <td>请求参数验证失败</td>
+                                </tr>
+                                <tr>
+                                    <td>DEVICE_NOT_FOUND</td>
+                                    <td>404</td>
+                                    <td>设备不存在</td>
+                                </tr>
+                                <tr>
+                                    <td>SESSION_NOT_FOUND</td>
+                                    <td>404</td>
+                                    <td>会话不存在</td>
+                                </tr>
+                                <tr>
+                                    <td>QUESTION_NOT_ACTIVE</td>
+                                    <td>400</td>
+                                    <td>当前没有活动的题目</td>
+                                </tr>
+                                <tr>
+                                    <td>SEAT_OCCUPIED</td>
+                                    <td>400</td>
+                                    <td>座位已被占用</td>
+                                </tr>
+                                <tr>
+                                    <td>INTERNAL_ERROR</td>
+                                    <td>500</td>
+                                    <td>服务器内部错误</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载公共组件和脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/common.js"></script>
+    
+    <script>
+        // 复制到剪贴板
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // 显示复制成功提示
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '已复制!';
+                button.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#6c757d';
+                }, 2000);
+            }).catch(function(err) {
+                console.error('复制失败:', err);
+                alert('复制失败，请手动复制');
+            });
+        }
+
+        // 平滑滚动到锚点
+        document.addEventListener('DOMContentLoaded', function() {
+            // 处理锚点链接的平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

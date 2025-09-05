@@ -10,7 +10,10 @@ const DeviceType = {
     ENVIRONMENT_CONTROLLER: 'ENVIRONMENT_CONTROLLER', // 环境控制装置
     CURTAIN_CONTROLLER: 'CURTAIN_CONTROLLER',       // 窗帘控制装置
     LIGHTING_CONTROLLER: 'LIGHTING_CONTROLLER',     // 灯光控制装置
-    LIFT_CONTROLLER: 'LIFT_CONTROLLER'              // 升降控制装置
+    LIFT_CONTROLLER: 'LIFT_CONTROLLER',             // 升降控制装置
+    INTERACTIVE_STUDENT_TERMINAL: 'INTERACTIVE_STUDENT_TERMINAL', // 互动教学学生终端
+    INTERACTIVE_DISPLAY: 'INTERACTIVE_DISPLAY',     // 互动教学显示设备
+    INTERACTIVE_CONTROLLER: 'INTERACTIVE_CONTROLLER' // 互动教学控制器
 };
 
 // 设备状态枚举
@@ -28,7 +31,10 @@ const DeviceModels = {
     [DeviceType.ENVIRONMENT_CONTROLLER]: 'ESP8266-CTRL-003',
     [DeviceType.CURTAIN_CONTROLLER]: 'ESP8266-CURTAIN-004',
     [DeviceType.LIGHTING_CONTROLLER]: 'ESP8266-LIGHT-005',
-    [DeviceType.LIFT_CONTROLLER]: 'ESP8266-LIFT-006'
+    [DeviceType.LIFT_CONTROLLER]: 'ESP8266-LIFT-006',
+    [DeviceType.INTERACTIVE_STUDENT_TERMINAL]: 'ESP8266-INTERACTIVE-007',
+    [DeviceType.INTERACTIVE_DISPLAY]: 'ESP8266-DISPLAY-008',
+    [DeviceType.INTERACTIVE_CONTROLLER]: 'ESP8266-CTRL-009'
 };
 
 // SSLAB设备中文名称
@@ -38,7 +44,10 @@ const deviceNames = {
     [DeviceType.ENVIRONMENT_CONTROLLER]: '环境控制装置',
     [DeviceType.CURTAIN_CONTROLLER]: '窗帘控制装置',
     [DeviceType.LIGHTING_CONTROLLER]: '灯光控制装置',
-    [DeviceType.LIFT_CONTROLLER]: '升降控制装置'
+    [DeviceType.LIFT_CONTROLLER]: '升降控制装置',
+    [DeviceType.INTERACTIVE_STUDENT_TERMINAL]: '互动教学学生终端',
+    [DeviceType.INTERACTIVE_DISPLAY]: '互动教学显示设备',
+    [DeviceType.INTERACTIVE_CONTROLLER]: '互动教学控制器'
 };
 
 // SSLAB设备功能描述
@@ -48,7 +57,10 @@ const deviceDescriptions = {
     [DeviceType.ENVIRONMENT_CONTROLLER]: '供水排风环境控制装置',
     [DeviceType.CURTAIN_CONTROLLER]: '窗帘自动控制装置',
     [DeviceType.LIGHTING_CONTROLLER]: '教室灯光调节控制装置',
-    [DeviceType.LIFT_CONTROLLER]: '升降台精密控制装置'
+    [DeviceType.LIFT_CONTROLLER]: '实验台升降控制装置',
+    [DeviceType.INTERACTIVE_STUDENT_TERMINAL]: '学生互动答题终端设备',
+    [DeviceType.INTERACTIVE_DISPLAY]: '互动教学大屏显示设备',
+    [DeviceType.INTERACTIVE_CONTROLLER]: '互动教学系统控制器'
 };
 
 class VirtualDevice {
@@ -74,9 +86,9 @@ class VirtualDevice {
         this.status = this.enabled ? DeviceStatus.ONLINE : DeviceStatus.OFFLINE;
         this.lastSeen = new Date();
         this.createdAt = new Date();
+        this.metadata = this.initializeMetadata();
         this.data = this.initializeData();
         this.capabilities = this.getCapabilities();
-        this.metadata = this.initializeMetadata();
         
         // 启动数据模拟
         this.startDataSimulation();
@@ -125,7 +137,7 @@ class VirtualDevice {
      * 初始化设备元数据
      */
     initializeMetadata() {
-        return {
+        const baseMetadata = {
             manufacturer: 'SSLAB',
             model: this.model,
             firmware: '1.2.3',
@@ -136,6 +148,42 @@ class VirtualDevice {
             lastUpdate: new Date(),
             lastSeen: this.lastSeen
         };
+
+        // 为互动教学设备添加特定的metadata
+        if (this.type === DeviceType.INTERACTIVE_CONTROLLER) {
+            baseMetadata.isActive = false;
+            baseMetadata.currentQuestionId = null;
+            baseMetadata.startTime = null;
+            baseMetadata.timeLimit = 0;
+            baseMetadata.autoNext = false;
+            baseMetadata.totalStudents = 0;
+            baseMetadata.answered = 0;
+            baseMetadata.correct = 0;
+            baseMetadata.incorrect = 0;
+            baseMetadata.timeout = 0;
+        } else if (this.type === DeviceType.INTERACTIVE_STUDENT_TERMINAL) {
+            baseMetadata.seatId = null;
+            baseMetadata.studentName = '';
+            baseMetadata.status = 'EMPTY';
+            baseMetadata.lastAnswer = null;
+            baseMetadata.answerTime = null;
+            baseMetadata.currentQuestionId = null;
+            baseMetadata.selectedAnswer = null;
+            baseMetadata.submitTime = null;
+            baseMetadata.responseTime = null;
+            baseMetadata.isCorrect = null;
+        } else if (this.type === DeviceType.INTERACTIVE_DISPLAY) {
+            baseMetadata.displayMode = 'QUESTION';
+            baseMetadata.brightness = 80;
+            baseMetadata.isFullscreen = false;
+            baseMetadata.currentQuestionId = null;
+            baseMetadata.questionContent = '';
+            baseMetadata.options = [];
+            baseMetadata.timeRemaining = 0;
+            baseMetadata.isActive = false;
+        }
+
+        return baseMetadata;
     }
     
     /**
@@ -158,6 +206,11 @@ class VirtualDevice {
      * 初始化设备数据
      */
     initializeData() {
+        // 如果metadata未初始化，先初始化它
+        if (!this.metadata) {
+            this.metadata = this.initializeMetadata();
+        }
+        
         const baseData = {
             model: this.model,
             macAddress: this.macAddress,
@@ -307,6 +360,77 @@ class VirtualDevice {
                     }
                 };
 
+            case DeviceType.INTERACTIVE_STUDENT_TERMINAL:
+                return {
+                    ...baseData,
+                    student: {
+                        seatId: (this.metadata && this.metadata.seatId) || 'A1', // A1-D4
+                        studentName: (this.metadata && this.metadata.studentName) || null,
+                        status: (this.metadata && this.metadata.status) || 'EMPTY' // EMPTY, WAITING, ANSWERED, CORRECT, INCORRECT, TIMEOUT
+                    },
+                    answer: {
+                        currentQuestionId: (this.metadata && this.metadata.currentQuestionId) || null,
+                        selectedAnswer: (this.metadata && this.metadata.selectedAnswer) || null,
+                        submitTime: (this.metadata && this.metadata.submitTime) || null,
+                        responseTime: (this.metadata && this.metadata.responseTime) || null,
+                        isCorrect: (this.metadata && this.metadata.isCorrect) || null
+                    },
+                    device: {
+                        screenOn: true,
+                        buttonLights: {
+                            A: false,
+                            B: false,
+                            C: false,
+                            D: false
+                        },
+                        buzzer: false,
+                        networkSignal: 80 + Math.random() * 20 // 80-100%
+                    }
+                };
+
+            case DeviceType.INTERACTIVE_DISPLAY:
+                return {
+                    ...baseData,
+                    display: {
+                        currentQuestionId: (this.metadata && this.metadata.currentQuestionId) || null,
+                        questionContent: (this.metadata && this.metadata.questionContent) || '',
+                        options: (this.metadata && this.metadata.options) || [],
+                        timeRemaining: (this.metadata && this.metadata.timeRemaining) || 0,
+                        isActive: (this.metadata && this.metadata.isActive) || false,
+                        brightness: 85 + Math.random() * 15, // 85-100%
+                        resolution: '1920x1080'
+                    },
+                    statistics: {
+                        totalStudents: (this.metadata && this.metadata.totalStudents) || 0,
+                        answered: (this.metadata && this.metadata.answered) || 0,
+                        correct: (this.metadata && this.metadata.correct) || 0,
+                        incorrect: (this.metadata && this.metadata.incorrect) || 0,
+                        timeout: (this.metadata && this.metadata.timeout) || 0
+                    }
+                };
+
+            case DeviceType.INTERACTIVE_CONTROLLER:
+                return {
+                    ...baseData,
+                    session: {
+                        isActive: (this.metadata && this.metadata.isActive) || false,
+                        currentQuestionId: (this.metadata && this.metadata.currentQuestionId) || null,
+                        startTime: (this.metadata && this.metadata.startTime) || null,
+                        timeLimit: (this.metadata && this.metadata.timeLimit) || 0,
+                        autoNext: (this.metadata && this.metadata.autoNext) || false
+                    },
+                    questions: {
+                        total: (this.metadata && this.metadata.totalQuestions) || 0,
+                        current: (this.metadata && this.metadata.currentIndex) || 0,
+                        bank: (this.metadata && this.metadata.questionBank) || []
+                    },
+                    network: {
+                        connectedTerminals: (this.metadata && this.metadata.connectedTerminals) || 0,
+                        maxTerminals: 16,
+                        signalQuality: 'excellent' // poor, fair, good, excellent
+                    }
+                };
+
             case DeviceType.LIFT_CONTROLLER:
                 return {
                     ...baseData,
@@ -365,6 +489,15 @@ class VirtualDevice {
             
             case DeviceType.LIFT_CONTROLLER:
                 return [...base, 'moveUp', 'moveDown', 'setPosition', 'stop', 'home'];
+            
+            case DeviceType.INTERACTIVE_STUDENT_TERMINAL:
+                return [...base, 'assignStudent', 'submitAnswer', 'clearAnswer', 'setButtonLight', 'buzzer'];
+            
+            case DeviceType.INTERACTIVE_DISPLAY:
+                return [...base, 'showQuestion', 'hideQuestion', 'updateStatistics', 'setBrightness'];
+            
+            case DeviceType.INTERACTIVE_CONTROLLER:
+                return [...base, 'startSession', 'stopSession', 'publishQuestion', 'clearAnswers', 'getStatistics'];
             
             default:
                 return base;
