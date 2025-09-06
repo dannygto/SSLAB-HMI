@@ -68,8 +68,26 @@ class DeviceViewModel @Inject constructor(
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage = _toastMessage.asSharedFlow()
     
-    // 当前服务器URL  
-    private val _currentServerUrl = MutableStateFlow("http://192.168.0.145:8080")
+    // 智能检测运行环境并选择合适的服务器地址
+    private fun getDefaultServerUrl(): String {
+        val isEmulator = (android.os.Build.FINGERPRINT.startsWith("generic")
+                || android.os.Build.FINGERPRINT.contains("sdk")
+                || android.os.Build.FINGERPRINT.contains("emulator")
+                || android.os.Build.MODEL.contains("Emulator")
+                || android.os.Build.MODEL.contains("Android SDK")
+                || android.os.Build.DEVICE.contains("generic")
+                || android.os.Build.PRODUCT.contains("sdk")
+                || android.os.Build.PRODUCT.contains("emulator"))
+        
+        return if (isEmulator) {
+            "http://10.0.2.2:8080"  // 模拟器访问宿主机
+        } else {
+            "http://192.168.0.145:8080"  // 物理设备访问实际IP
+        }
+    }
+    
+    // 当前服务器URL (自动适配模拟器和物理设备)
+    private val _currentServerUrl = MutableStateFlow(getDefaultServerUrl())
     val currentServerUrl = _currentServerUrl.asStateFlow()
     
     // 服务器连接测试状态  

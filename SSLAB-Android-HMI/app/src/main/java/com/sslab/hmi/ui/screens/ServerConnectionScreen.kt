@@ -294,13 +294,35 @@ private fun ConnectionStatusCard(
 private fun PresetServerAddresses(
     onAddressSelected: (String) -> Unit
 ) {
-    val presetAddresses = listOf(
-        "http://192.168.0.145:8080",
-        "http://192.168.1.100:8080",
-        "http://192.168.0.100:8080", 
-        "http://10.0.0.100:8080",
-        "http://localhost:8080"
-    )
+    // 智能检测运行环境
+    val isEmulator = (android.os.Build.FINGERPRINT.startsWith("generic")
+            || android.os.Build.FINGERPRINT.contains("sdk")
+            || android.os.Build.FINGERPRINT.contains("emulator")
+            || android.os.Build.MODEL.contains("Emulator")
+            || android.os.Build.MODEL.contains("Android SDK")
+            || android.os.Build.DEVICE.contains("generic")
+            || android.os.Build.PRODUCT.contains("sdk")
+            || android.os.Build.PRODUCT.contains("emulator"))
+    
+    val presetAddresses = if (isEmulator) {
+        listOf(
+            "http://10.0.2.2:8080",        // 模拟器访问宿主机 (推荐)
+            "http://192.168.0.145:8080",   // 物理设备地址
+            "http://192.168.1.100:8080",
+            "http://192.168.0.100:8080", 
+            "http://10.0.0.100:8080",
+            "http://localhost:8080"
+        )
+    } else {
+        listOf(
+            "http://192.168.0.145:8080",   // 物理设备地址 (推荐)
+            "http://10.0.2.2:8080",       // 模拟器地址
+            "http://192.168.1.100:8080",
+            "http://192.168.0.100:8080", 
+            "http://10.0.0.100:8080",
+            "http://localhost:8080"
+        )
+    }
     
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp)

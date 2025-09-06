@@ -1,12 +1,6 @@
 package com.sslab.hmi.data.repository
 
-impo    /**
-     * 生成初始的48个座位 (A1-H6)
-     */
-    private fun generateInitialSeats(): List<StudentSeat> {
-        val seats = mutableListOf<StudentSeat>()
-        val rows = listOf("A", "B", "C", "D", "E", "F", "G", "H")
-        val cols = listOf(1, 2, 3, 4, 5, 6)inx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

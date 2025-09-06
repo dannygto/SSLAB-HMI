@@ -27,7 +27,24 @@ class DeviceRepository @Inject constructor(
 ) {
     companion object {
         private const val TAG = "DeviceRepository"
-        const val DEFAULT_SERVER_URL = "http://192.168.0.145:8080"
+        
+        // 智能选择默认服务器地址
+        val DEFAULT_SERVER_URL = run {
+            val isEmulator = (android.os.Build.FINGERPRINT.startsWith("generic")
+                    || android.os.Build.FINGERPRINT.contains("sdk")
+                    || android.os.Build.FINGERPRINT.contains("emulator")
+                    || android.os.Build.MODEL.contains("Emulator")
+                    || android.os.Build.MODEL.contains("Android SDK")
+                    || android.os.Build.DEVICE.contains("generic")
+                    || android.os.Build.PRODUCT.contains("sdk")
+                    || android.os.Build.PRODUCT.contains("emulator"))
+            
+            if (isEmulator) {
+                "http://10.0.2.2:8080"  // 模拟器访问宿主机
+            } else {
+                "http://192.168.0.145:8080"  // 物理设备访问实际IP
+            }
+        }
     }
     
     // 协程作用域

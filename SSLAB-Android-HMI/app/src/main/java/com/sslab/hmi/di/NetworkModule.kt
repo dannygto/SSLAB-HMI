@@ -31,12 +31,29 @@ import javax.net.ssl.X509TrustManager
 object NetworkModule {
     
     // 服务器配置
-    private const val SERVER_IP = "192.168.0.145"
+    private const val SERVER_IP_PHYSICAL = "192.168.0.145"  // 物理设备使用的实际IP
+    private const val SERVER_IP_EMULATOR = "10.0.2.2"       // 模拟器访问宿主机的特殊IP
     private const val HTTP_PORT = 8080
     private const val HTTPS_PORT = 8443
     
     // 协议选择：开发环境用HTTP，生产环境用HTTPS
     private const val USE_HTTPS = false
+    
+    // 智能检测运行环境
+    private fun isEmulator(): Boolean {
+        return (android.os.Build.FINGERPRINT.startsWith("generic")
+                || android.os.Build.FINGERPRINT.contains("sdk")
+                || android.os.Build.FINGERPRINT.contains("emulator")
+                || android.os.Build.MODEL.contains("Emulator")
+                || android.os.Build.MODEL.contains("Android SDK")
+                || android.os.Build.MANUFACTURER.contains("Genymotion")
+                || android.os.Build.DEVICE.contains("generic")
+                || android.os.Build.PRODUCT.contains("sdk")
+                || android.os.Build.PRODUCT.contains("emulator"))
+    }
+    
+    // 根据运行环境选择正确的服务器地址
+    private val SERVER_IP = if (isEmulator()) SERVER_IP_EMULATOR else SERVER_IP_PHYSICAL
     
     private val BASE_URL = if (USE_HTTPS) {
         "https://$SERVER_IP:$HTTPS_PORT/"
