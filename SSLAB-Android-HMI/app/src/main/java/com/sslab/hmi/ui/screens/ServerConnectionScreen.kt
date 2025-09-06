@@ -24,11 +24,20 @@ fun ServerConnectionScreen(
     onNavigateBack: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel()
 ) {
-    var serverUrl by remember { mutableStateOf("http://192.168.0.145:8080") }
+    var serverUrl by remember { mutableStateOf("") }
     var isConnecting by remember { mutableStateOf(false) }
     
     val isConnected by viewModel.isConnected.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val currentServerUrl by viewModel.currentServerUrl.collectAsState()
+    val serverConnectionStatus by viewModel.serverConnectionStatus.collectAsState()
+    
+    // 初始化服务器URL
+    LaunchedEffect(currentServerUrl) {
+        if (serverUrl.isEmpty()) {
+            serverUrl = currentServerUrl
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -52,7 +61,8 @@ fun ServerConnectionScreen(
             // 连接状态卡片
             ConnectionStatusCard(
                 isConnected = isConnected,
-                serverUrl = serverUrl
+                serverUrl = currentServerUrl,
+                connectionStatus = serverConnectionStatus
             )
             
             // 服务器配置卡片
@@ -94,6 +104,19 @@ fun ServerConnectionScreen(
                     
                     PresetServerAddresses { address ->
                         serverUrl = address
+                    }
+                    
+                    // 测试连接按钮
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.testServerConnection(serverUrl)
+                        },
+                        enabled = serverUrl.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Wifi, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("测试连接")
                     }
                     
                     // 连接按钮
@@ -203,7 +226,8 @@ fun ServerConnectionScreen(
 @Composable
 private fun ConnectionStatusCard(
     isConnected: Boolean,
-    serverUrl: String
+    serverUrl: String,
+    connectionStatus: String?
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -238,17 +262,24 @@ private fun ConnectionStatusCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (isConnected) {
+                
+                Text(
+                    text = if (serverUrl.isNotBlank()) serverUrl else "未配置服务器地址",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                
+                // 显示连接测试状态
+                if (connectionStatus != null) {
                     Text(
-                        text = serverUrl,
+                        text = connectionStatus,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                } else {
-                    Text(
-                        text = "请配置并连接服务器",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
+                        color = when {
+                            connectionStatus.contains("成功") -> MaterialTheme.colorScheme.primary
+                            connectionStatus.contains("失败") -> MaterialTheme.colorScheme.error
+                            connectionStatus.contains("测试") -> MaterialTheme.colorScheme.outline
+                            else -> MaterialTheme.colorScheme.outline
+                        }
                     )
                 }
             }

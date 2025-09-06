@@ -17,6 +17,17 @@ class SSLabRepository @Inject constructor(
     private val apiService: SSLabApiService
 ) {
     
+    /**
+     * 提取API响应中的错误信息
+     */
+    private fun extractErrorMessage(response: Response<*>, defaultMessage: String): String {
+        return try {
+            (response.body() as? ApiResponse<*>)?.error ?: defaultMessage
+        } catch (e: Exception) {
+            defaultMessage
+        }
+    }
+    
     // ========== 设备管理相关 ==========
     
     /**
@@ -28,7 +39,7 @@ class SSLabRepository @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 Result.success(response.body()?.data ?: emptyList())
             } else {
-                Result.failure(Exception(response.body()?.error ?: "获取设备列表失败"))
+                Result.failure(Exception(extractErrorMessage(response, "获取设备列表失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -36,14 +47,7 @@ class SSLabRepository @Inject constructor(
     }
     
     /**
-     * 获取设备列表作为Flow
-     */
-    fun getDevicesFlow(): Flow<Result<List<Device>>> = flow {
-        emit(getDevices())
-    }
-    
-    /**
-     * 根据ID获取设备
+     * 根据ID获取设备信息
      */
     suspend fun getDevice(deviceId: String): Result<Device> {
         return try {
@@ -53,7 +57,7 @@ class SSLabRepository @Inject constructor(
                     Result.success(device)
                 } ?: Result.failure(Exception("设备数据为空"))
             } else {
-                Result.failure(Exception(response.body()?.error ?: "获取设备信息失败"))
+                Result.failure(Exception(extractErrorMessage(response, "获取设备信息失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -71,7 +75,7 @@ class SSLabRepository @Inject constructor(
                     Result.success(device)
                 } ?: Result.failure(Exception("添加设备返回数据为空"))
             } else {
-                Result.failure(Exception(response.body()?.error ?: "添加设备失败"))
+                Result.failure(Exception(extractErrorMessage(response, "添加设备失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -89,7 +93,7 @@ class SSLabRepository @Inject constructor(
                     Result.success(device)
                 } ?: Result.failure(Exception("更新设备返回数据为空"))
             } else {
-                Result.failure(Exception(response.body()?.error ?: "更新设备失败"))
+                Result.failure(Exception(extractErrorMessage(response, "更新设备失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -105,7 +109,7 @@ class SSLabRepository @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception(response.body()?.error ?: "删除设备失败"))
+                Result.failure(Exception(extractErrorMessage(response, "删除设备失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -113,15 +117,35 @@ class SSLabRepository @Inject constructor(
     }
     
     /**
-     * 控制单个设备
+     * 设备控制
      */
-    suspend fun controlDevice(deviceId: String, command: DeviceControlCommand): Result<Map<String, Any>> {
+    suspend fun controlDevice(deviceId: String, command: DeviceCommand): Result<Map<String, Any>> {
         return try {
-            val response = apiService.controlDevice(deviceId, command)
+            val response = apiService.sendDeviceCommand(deviceId, command)
             if (response.isSuccessful && response.body()?.success == true) {
                 Result.success(response.body()?.data ?: emptyMap())
             } else {
-                Result.failure(Exception(response.body()?.error ?: "设备控制失败"))
+                Result.failure(Exception(extractErrorMessage(response, "设备控制失败")))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    // ========== 数据监控相关 ==========
+    
+    /**
+     * 获取环境数据
+     */
+    suspend fun getEnvironmentData(deviceId: String): Result<EnvironmentData> {
+        return try {
+            val response = apiService.getEnvironmentData(deviceId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                response.body()?.data?.let { data ->
+                    Result.success(data)
+                } ?: Result.failure(Exception("环境数据为空"))
+            } else {
+                Result.failure(Exception(extractErrorMessage(response, "获取环境数据失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -129,124 +153,24 @@ class SSLabRepository @Inject constructor(
     }
     
     /**
-     * 批量控制设备
+     * 获取电源数据
      */
-    suspend fun controlDevicesBatch(request: BatchControlRequest): Result<Map<String, Any>> {
+    suspend fun getPowerData(deviceId: String): Result<PowerControlData> {
         return try {
-            val response = apiService.controlDevicesBatch(request)
+            val response = apiService.getPowerData(deviceId)
             if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: emptyMap())
+                response.body()?.data?.let { data ->
+                    Result.success(data)
+                } ?: Result.failure(Exception("电源数据为空"))
             } else {
-                Result.failure(Exception(response.body()?.error ?: "批量控制设备失败"))
+                Result.failure(Exception(extractErrorMessage(response, "获取电源数据失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
     
-    /**
-     * 搜索设备
-     */
-    suspend fun searchDevices(request: DeviceSearchRequest): Result<List<Device>> {
-        return try {
-            val response = apiService.searchDevices(request)
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: emptyList())
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "搜索设备失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 获取分组设备
-     */
-    suspend fun getDevicesByGroup(groupId: String): Result<List<Device>> {
-        return try {
-            val response = apiService.getDevicesByGroup(groupId)
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: emptyList())
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "获取分组设备失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    // ========== 分组管理相关 ==========
-    
-    /**
-     * 获取所有分组
-     */
-    suspend fun getGroups(): Result<List<DeviceGroup>> {
-        return try {
-            val response = apiService.getGroups()
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: emptyList())
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "获取分组列表失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 创建分组
-     */
-    suspend fun createGroup(request: CreateGroupRequest): Result<DeviceGroup> {
-        return try {
-            val response = apiService.createGroup(request)
-            if (response.isSuccessful && response.body()?.success == true) {
-                response.body()?.data?.let { group ->
-                    Result.success(group)
-                } ?: Result.failure(Exception("创建分组返回数据为空"))
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "创建分组失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 更新分组
-     */
-    suspend fun updateGroup(groupId: String, request: UpdateGroupRequest): Result<DeviceGroup> {
-        return try {
-            val response = apiService.updateGroup(groupId, request)
-            if (response.isSuccessful && response.body()?.success == true) {
-                response.body()?.data?.let { group ->
-                    Result.success(group)
-                } ?: Result.failure(Exception("更新分组返回数据为空"))
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "更新分组失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 删除分组
-     */
-    suspend fun deleteGroup(groupId: String): Result<Unit> {
-        return try {
-            val response = apiService.deleteGroup(groupId)
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "删除分组失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    // ========== 统计信息相关 ==========
+    // ========== 系统管理相关 ==========
     
     /**
      * 获取系统统计信息
@@ -257,9 +181,9 @@ class SSLabRepository @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 response.body()?.data?.let { stats ->
                     Result.success(stats)
-                } ?: Result.failure(Exception("统计信息数据为空"))
+                } ?: Result.failure(Exception("系统统计数据为空"))
             } else {
-                Result.failure(Exception(response.body()?.error ?: "获取统计信息失败"))
+                Result.failure(Exception(extractErrorMessage(response, "获取系统统计失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -275,47 +199,9 @@ class SSLabRepository @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 response.body()?.data?.let { stats ->
                     Result.success(stats)
-                } ?: Result.failure(Exception("设备统计信息数据为空"))
+                } ?: Result.failure(Exception("设备统计数据为空"))
             } else {
-                Result.failure(Exception(response.body()?.error ?: "获取设备统计信息失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 获取分组统计信息
-     */
-    suspend fun getGroupStats(): Result<GroupStats> {
-        return try {
-            val response = apiService.getGroupStats()
-            if (response.isSuccessful && response.body()?.success == true) {
-                response.body()?.data?.let { stats ->
-                    Result.success(stats)
-                } ?: Result.failure(Exception("分组统计信息数据为空"))
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "获取分组统计信息失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    // ========== 系统管理相关 ==========
-    
-    /**
-     * 获取系统健康状态
-     */
-    suspend fun getSystemHealth(): Result<SystemHealth> {
-        return try {
-            val response = apiService.getSystemHealth()
-            if (response.isSuccessful && response.body()?.success == true) {
-                response.body()?.data?.let { health ->
-                    Result.success(health)
-                } ?: Result.failure(Exception("系统健康状态数据为空"))
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "获取系统健康状态失败"))
+                Result.failure(Exception(extractErrorMessage(response, "获取设备统计失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -329,25 +215,9 @@ class SSLabRepository @Inject constructor(
         return try {
             val response = apiService.createTestDevices(request)
             if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: "测试设备创建成功")
+                Result.success(response.body()?.data ?: "创建成功")
             } else {
-                Result.failure(Exception(response.body()?.error ?: "创建测试设备失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 重置系统
-     */
-    suspend fun resetSystem(): Result<String> {
-        return try {
-            val response = apiService.resetSystem()
-            if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: "系统重置成功")
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "系统重置失败"))
+                Result.failure(Exception(extractErrorMessage(response, "创建测试设备失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -361,75 +231,46 @@ class SSLabRepository @Inject constructor(
         return try {
             val response = apiService.clearDevices()
             if (response.isSuccessful && response.body()?.success == true) {
-                Result.success(response.body()?.data ?: "设备清空成功")
+                Result.success(response.body()?.data ?: "清空成功")
             } else {
-                Result.failure(Exception(response.body()?.error ?: "清空设备失败"))
+                Result.failure(Exception(extractErrorMessage(response, "清空设备失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
     
-    // ========== 设备信息相关 ==========
+    /**
+     * 获取系统健康状态
+     */
+    suspend fun getSystemHealth(): Result<SystemHealth> {
+        return try {
+            val response = apiService.getSystemHealth()
+            if (response.isSuccessful && response.body()?.success == true) {
+                response.body()?.data?.let { health ->
+                    Result.success(health)
+                } ?: Result.failure(Exception("系统健康状态数据为空"))
+            } else {
+                Result.failure(Exception(extractErrorMessage(response, "获取系统健康状态失败")))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
     
     /**
-     * 获取设备类型列表
+     * 扫描设备
      */
-    suspend fun getDeviceTypes(): Result<List<DeviceTypeInfo>> {
+    suspend fun scanDevices(): Result<List<Device>> {
         return try {
-            val response = apiService.getDeviceTypes()
+            val response = apiService.scanDevices()
             if (response.isSuccessful && response.body()?.success == true) {
                 Result.success(response.body()?.data ?: emptyList())
             } else {
-                Result.failure(Exception(response.body()?.error ?: "获取设备类型失败"))
+                Result.failure(Exception(extractErrorMessage(response, "设备扫描失败")))
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
-    
-    /**
-     * 获取设备能力信息
-     */
-    suspend fun getDeviceCapabilities(type: String): Result<DeviceCapabilities> {
-        return try {
-            val response = apiService.getDeviceCapabilities(type)
-            if (response.isSuccessful && response.body()?.success == true) {
-                response.body()?.data?.let { capabilities ->
-                    Result.success(capabilities)
-                } ?: Result.failure(Exception("设备能力信息数据为空"))
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "获取设备能力信息失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * 获取API文档
-     */
-    suspend fun getApiDocs(): Result<ApiDocumentation> {
-        return try {
-            val response = apiService.getApiDocs()
-            if (response.isSuccessful && response.body()?.success == true) {
-                response.body()?.data?.let { docs ->
-                    Result.success(docs)
-                } ?: Result.failure(Exception("API文档数据为空"))
-            } else {
-                Result.failure(Exception(response.body()?.error ?: "获取API文档失败"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-}
-
-/**
- * 结果包装类
- */
-sealed class ApiResult<T> {
-    data class Success<T>(val data: T) : ApiResult<T>()
-    data class Error<T>(val message: String, val throwable: Throwable? = null) : ApiResult<T>()
-    data class Loading<T>(val isLoading: Boolean = true) : ApiResult<T>()
 }

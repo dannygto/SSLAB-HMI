@@ -1,6 +1,8 @@
 package com.sslab.hmi.di
 
 import com.sslab.hmi.data.repository.InteractiveTeachingRepository
+import com.sslab.hmi.data.repository.InteractiveTeachingRepositorySimple
+import com.sslab.hmi.data.network.InteractiveTeachingApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,5 +20,13 @@ object InteractiveTeachingModule {
     @Singleton
     fun provideInteractiveTeachingRepository(): InteractiveTeachingRepository {
         return InteractiveTeachingRepository()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideInteractiveTeachingRepositorySimple(
+        apiService: InteractiveTeachingApiService
+    ): InteractiveTeachingRepositorySimple {
+        return InteractiveTeachingRepositorySimple(apiService)
     }
 }

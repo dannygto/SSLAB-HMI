@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Android编译环境配置",
+			"type": "shell",
+			"command": "echo",
+			"args": [
+				"Android SDK已配置在D:\\Android\\Sdk，local.properties已设置完成"
+			]
+		},
+		{
+			"label": "修复编译错误",
+			"type": "shell",
+			"command": "echo '开始修复编译错误...' && .\\gradlew compileDebugKotlin --console=plain",
+			"isBackground": false,
+			"problemMatcher": [
+				"$kotlinc"
+			],
+			"group": "build"
+		}
+	]
+}

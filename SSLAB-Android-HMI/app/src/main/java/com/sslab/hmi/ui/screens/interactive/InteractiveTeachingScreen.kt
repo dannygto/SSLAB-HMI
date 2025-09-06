@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,12 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cn.sslab.hmi.ui.theme.BlueGradientColors
 
 /**
- * 互动教学主界面
+ * 互动教学主界面 - 优化为一屏显示
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +35,11 @@ fun InteractiveTeachingScreen(
     
     var showQuestionDialog by remember { mutableStateOf(false) }
     var showSeatInfoDialog by remember { mutableStateOf<String?>(null) }
+    
+    // 初始化时自动连接API
+    LaunchedEffect(Unit) {
+        viewModel.initializeConnection()
+    }
     
     Scaffold(
         topBar = {
@@ -54,9 +62,7 @@ fun InteractiveTeachingScreen(
                 },
                 actions = {
                     // 刷新按钮
-                    IconButton(
-                        onClick = { viewModel.refreshData() }
-                    ) {
+                    IconButton(onClick = { viewModel.refreshData() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "刷新",
@@ -65,9 +71,7 @@ fun InteractiveTeachingScreen(
                     }
                     
                     // 发布题目按钮
-                    IconButton(
-                        onClick = { showQuestionDialog = true }
-                    ) {
+                    IconButton(onClick = { showQuestionDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "发布题目",
@@ -79,84 +83,62 @@ fun InteractiveTeachingScreen(
                     containerColor = BlueGradientColors.BackgroundPrimary
                 )
             )
-        },
-        floatingActionButton = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // 停止答题按钮
-                if (uiState.currentQuestion != null && uiState.isQuestionActive) {
-                    FloatingActionButton(
-                        onClick = { viewModel.stopQuestion() },
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Stop,
-                            contentDescription = "停止答题"
-                        )
-                    }
-                }
-                
-                // 清除答案按钮
-                if (statistics != null && statistics!!.totalAnswered > 0) {
-                    FloatingActionButton(
-                        onClick = { viewModel.clearAnswers() },
-                        containerColor = BlueGradientColors.AccentBlue
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "清除答案",
-                            tint = BlueGradientColors.BackgroundPrimary
-                        )
-                    }
-                }
-            }
         }
     ) { paddingValues ->
-        LazyColumn(
+        // 使用Row布局实现左右分布，避免滚动
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // 当前题目卡片
-            item {
-                QuestionCard(
+            // 左侧：题目和控制面板 (40%宽度)
+            Column(
+                modifier = Modifier
+                    .weight(0.4f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 当前题目卡片 - 紧凑版
+                CompactQuestionCard(
                     question = uiState.currentQuestion,
                     timeRemaining = timeRemaining,
                     isActive = uiState.isQuestionActive,
-                    onOptionSelected = { /* 教师界面不需要选择选项 */ }
+                    modifier = Modifier.weight(0.6f)
                 )
-            }
-            
-            // 答题统计卡片
-            item {
-                AnswerStatisticsCard(
-                    statistics = statistics
-                )
-            }
-            
-            // 学生座位网格
-            item {
-                StudentSeatsGrid(
-                    seats = uiState.students,
-                    onSeatClick = { seatId ->
-                        showSeatInfoDialog = seatId
-                    }
-                )
-            }
-            
-            // 操作控制面板
-            item {
-                TeacherControlPanel(
+                
+                // 控制按钮 - 紧凑版
+                CompactControlButtons(
                     currentQuestion = uiState.currentQuestion,
                     isQuestionActive = uiState.isQuestionActive,
                     onStartQuestion = { viewModel.startQuestion() },
                     onStopQuestion = { viewModel.stopQuestion() },
                     onClearAnswers = { viewModel.clearAnswers() },
-                    onPublishQuestion = { showQuestionDialog = true }
+                    onPublishQuestion = { showQuestionDialog = true },
+                    onCreateTestQuestion = { viewModel.createTestQuestion() },
+                    modifier = Modifier.weight(0.4f)
+                )
+            }
+            
+            // 右侧：学生座位网格和统计 (60%宽度)
+            Column(
+                modifier = Modifier
+                    .weight(0.6f)
+                    .fillMaxHeight(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 答题统计 - 紧凑版
+                CompactAnswerStatistics(
+                    statistics = statistics,
+                    modifier = Modifier.height(80.dp)
+                )
+                
+                // 学生座位网格 - 主要显示区域
+                CompactStudentSeatsGrid(
+                    seats = uiState.students,
+                    onSeatClick = { seatId -> showSeatInfoDialog = seatId },
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
@@ -186,6 +168,416 @@ fun InteractiveTeachingScreen(
                 viewModel.removeStudentFromSeat(seatId)
                 showSeatInfoDialog = null
             }
+        )
+    }
+}
+
+/**
+ * 紧凑版题目卡片
+ */
+@Composable
+fun CompactQuestionCard(
+    question: Question?,
+    timeRemaining: Int,
+    isActive: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = BlueGradientColors.BackgroundPrimary
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp)
+        ) {
+            // 题目标题和计时器
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (question != null) "当前题目" else "暂无题目",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = BlueGradientColors.PrimaryText,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                if (question != null && isActive) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (timeRemaining <= 10) 
+                                MaterialTheme.colorScheme.error.copy(alpha = 0.1f) 
+                            else BlueGradientColors.AccentBlue.copy(alpha = 0.1f)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Timer,
+                                contentDescription = "倒计时",
+                                tint = if (timeRemaining <= 10) 
+                                    MaterialTheme.colorScheme.error 
+                                else BlueGradientColors.AccentBlue,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "${timeRemaining}s",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (timeRemaining <= 10) 
+                                    MaterialTheme.colorScheme.error 
+                                else BlueGradientColors.AccentBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            if (question != null) {
+                // 题目内容 - 限制高度
+                Text(
+                    text = question.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BlueGradientColors.PrimaryText,
+                    maxLines = 3,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // 选项 - 紧凑显示
+                question.options.forEachIndexed { index, option ->
+                    val optionLabel = ('A' + index).toString()
+                    Text(
+                        text = "$optionLabel. $option",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (optionLabel == question.correctAnswer) 
+                            BlueGradientColors.AccentGreen 
+                        else BlueGradientColors.SecondaryText,
+                        maxLines = 1
+                    )
+                }
+            } else {
+                // 无题目状态
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Quiz,
+                        contentDescription = "无题目",
+                        tint = BlueGradientColors.SecondaryText,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "请发布题目开始答题",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = BlueGradientColors.SecondaryText
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 紧凑版控制按钮
+ */
+@Composable
+fun CompactControlButtons(
+    currentQuestion: Question?,
+    isQuestionActive: Boolean,
+    onStartQuestion: () -> Unit,
+    onStopQuestion: () -> Unit,
+    onClearAnswers: () -> Unit,
+    onPublishQuestion: () -> Unit,
+    onCreateTestQuestion: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = BlueGradientColors.BackgroundPrimary
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "控制面板",
+                style = MaterialTheme.typography.titleSmall,
+                color = BlueGradientColors.PrimaryText,
+                fontWeight = FontWeight.Bold
+            )
+            
+            // 第一行按钮
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // 发布题目
+                Button(
+                    onClick = onPublishQuestion,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BlueGradientColors.AccentBlue
+                    ),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "发布",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+                
+                // 开始/停止答题
+                if (currentQuestion != null) {
+                    if (isQuestionActive) {
+                        Button(
+                            onClick = onStopQuestion,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            ),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "停止",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = onStartQuestion,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = BlueGradientColors.AccentGreen
+                            ),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "开始",
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // 测试按钮行
+            Button(
+                onClick = onCreateTestQuestion,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                ),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "创建测试题目",
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+            
+            // 第二行按钮
+            if (currentQuestion != null) {
+                Button(
+                    onClick = onClearAnswers,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BlueGradientColors.SecondaryText.copy(alpha = 0.1f),
+                        contentColor = BlueGradientColors.SecondaryText
+                    ),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "清除答案",
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            }
+            
+            // 状态指示器
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                StatusIndicator(
+                    icon = if (currentQuestion != null) Icons.Default.Check else Icons.Default.Close,
+                    text = if (currentQuestion != null) "有题目" else "无题目",
+                    color = if (currentQuestion != null) BlueGradientColors.AccentGreen else BlueGradientColors.SecondaryText,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                StatusIndicator(
+                    icon = if (isQuestionActive) Icons.Default.PlayArrow else Icons.Default.Pause,
+                    text = if (isQuestionActive) "答题中" else "已停止",
+                    color = if (isQuestionActive) BlueGradientColors.AccentBlue else BlueGradientColors.SecondaryText,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 状态指示器
+ */
+@Composable
+fun StatusIndicator(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    color: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.1f)
+        ),
+        shape = RoundedCornerShape(6.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(12.dp)
+            )
+            Spacer(modifier = Modifier.width(3.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = color,
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
+/**
+ * 紧凑版答题统计
+ */
+@Composable
+fun CompactAnswerStatistics(
+    statistics: AnswerStatistics?,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = BlueGradientColors.BackgroundPrimary
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "答题统计",
+                style = MaterialTheme.typography.titleSmall,
+                color = BlueGradientColors.PrimaryText,
+                fontWeight = FontWeight.Bold
+            )
+            
+            if (statistics != null) {
+                StatItem("总计", statistics.totalAnswered.toString(), BlueGradientColors.PrimaryText)
+                StatItem("正确", statistics.correctCount.toString(), BlueGradientColors.AccentGreen)
+                StatItem("错误", statistics.incorrectCount.toString(), MaterialTheme.colorScheme.error)
+                StatItem("超时", statistics.timeoutCount.toString(), BlueGradientColors.AccentOrange)
+            } else {
+                Text(
+                    text = "暂无答题数据",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BlueGradientColors.SecondaryText
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 统计项目
+ */
+@Composable
+fun StatItem(
+    label: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = BlueGradientColors.SecondaryText
         )
     }
 }

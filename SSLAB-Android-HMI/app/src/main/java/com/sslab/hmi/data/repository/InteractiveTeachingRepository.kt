@@ -70,6 +70,7 @@ class InteractiveTeachingRepository @Inject constructor() {
                         studentName = studentName,
                         status = if (studentName != null) SeatStatus.WAITING else SeatStatus.EMPTY,
                         lastAnswer = null,
+                        answerTime = null,
                         responseTime = null,
                         isCorrect = null
                     )
@@ -119,18 +120,18 @@ class InteractiveTeachingRepository @Inject constructor() {
         // 记录学生答案
         val studentAnswer = StudentAnswer(
             studentId = seat.studentName ?: "未知学生",
-            seatPosition = seatPosition,
+            seatId = seatPosition,
             questionId = currentQuestion.id,
             answer = answer,
-            timestamp = currentTime,
-            isCorrect = answer == currentQuestion.correctAnswer,
-            responseTime = (currentTime - (currentQuestion.startTime ?: currentTime)).toInt() // 计算答题用时
+            submittedAt = currentTime.toString(),
+            responseTime = (currentTime - (currentQuestion.createdAt?.toLongOrNull() ?: currentTime)).toDouble() / 1000.0, // 秒
+            isCorrect = answer == currentQuestion.correctAnswer
         )
         
         // 更新答案列表
         val updatedAnswers = _studentAnswers.value.toMutableList()
         // 移除该学生的旧答案
-        updatedAnswers.removeAll { it.seatPosition == seatPosition && it.questionId == currentQuestion.id }
+        updatedAnswers.removeAll { it.seatId == seatPosition && it.questionId == currentQuestion.id }
         // 添加新答案
         updatedAnswers.add(studentAnswer)
         _studentAnswers.value = updatedAnswers
@@ -142,13 +143,14 @@ class InteractiveTeachingRepository @Inject constructor() {
     /**
      * 更新座位状态
      */
-    private suspend fun updateSeatStatus(seatPosition: String, answer: String, answerTime: Long, isCorrect: Boolean) {
+    private suspend fun updateSeatStatus(seatId: String, answer: String, answerTime: Long, isCorrect: Boolean) {
         val updatedSeats = _students.value.map { seat ->
-            if (seat.seatId == seatPosition && seat.studentName != null) {
+            if (seat.seatId == seatId && seat.studentName != null) {
                 seat.copy(
                     status = if (isCorrect) SeatStatus.CORRECT else SeatStatus.INCORRECT,
                     lastAnswer = answer,
-                    responseTime = (answerTime - (_currentQuestion.value?.startTime ?: answerTime)).toInt(),
+                    answerTime = answerTime.toString(),
+                    responseTime = (answerTime - (_currentQuestion.value?.createdAt?.toLongOrNull() ?: answerTime)).toDouble() / 1000.0,
                     isCorrect = isCorrect
                 )
             } else {
@@ -169,6 +171,7 @@ class InteractiveTeachingRepository @Inject constructor() {
             seat.copy(
                 status = if (seat.studentName != null) SeatStatus.WAITING else SeatStatus.EMPTY,
                 lastAnswer = null,
+                answerTime = null,
                 responseTime = null,
                 isCorrect = null
             )
@@ -186,6 +189,7 @@ class InteractiveTeachingRepository @Inject constructor() {
                     studentName = studentName,
                     status = SeatStatus.WAITING,
                     lastAnswer = null,
+                    answerTime = null,
                     responseTime = null,
                     isCorrect = null
                 )
@@ -206,6 +210,7 @@ class InteractiveTeachingRepository @Inject constructor() {
                     studentName = null,
                     status = SeatStatus.EMPTY,
                     lastAnswer = null,
+                    answerTime = null,
                     responseTime = null,
                     isCorrect = null
                 )

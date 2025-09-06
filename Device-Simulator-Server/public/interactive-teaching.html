@@ -18,19 +18,32 @@
         .seat-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            max-width: 400px;
+            gap: 8px;
+            max-width: 500px;
             margin: 0 auto;
+            grid-auto-rows: minmax(45px, auto);
         }
         .seat {
-            padding: 10px;
+            padding: 8px;
             text-align: center;
             border-radius: 8px;
             font-weight: bold;
-            min-height: 50px;
+            font-size: 13px;
+            min-height: 45px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            line-height: 1.2;
+        }
+        .seat-id {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .seat-name {
+            font-size: 12px;
+            font-weight: normal;
         }
         .seat-empty { background-color: #e9ecef; color: #6c757d; }
         .seat-occupied { background-color: #cfe2ff; color: #084298; border: 2px solid #6ea8fe; }
@@ -47,6 +60,23 @@
             white-space: pre-wrap;
             max-height: 300px;
             overflow-y: auto;
+        }
+        
+        /* 增大按钮字体 */
+        .btn {
+            font-size: 16px;
+            font-weight: 600;
+            padding: 12px 20px;
+        }
+        
+        .btn-sm {
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+        
+        .test-button {
+            margin: 5px;
+            font-size: 15px;
         }
         
         .test-button {
@@ -222,12 +252,32 @@
                         <h6>分配学生到座位</h6>
                         <div class="row">
                             <div class="col-md-3">
-                                <select class="form-control" id="seat-id">
+                                <select class="form-control" id="seat-id" title="选择座位">
                                     <option value="">选择座位</option>
                                     <option value="A1">A1</option>
                                     <option value="A2">A2</option>
+                                    <option value="A3">A3</option>
+                                    <option value="A4">A4</option>
                                     <option value="B1">B1</option>
+                                    <option value="B2">B2</option>
+                                    <option value="B3">B3</option>
+                                    <option value="B4">B4</option>
                                     <option value="C1">C1</option>
+                                    <option value="C2">C2</option>
+                                    <option value="C3">C3</option>
+                                    <option value="C4">C4</option>
+                                    <option value="D1">D1</option>
+                                    <option value="D2">D2</option>
+                                    <option value="D3">D3</option>
+                                    <option value="D4">D4</option>
+                                    <option value="E1">E1</option>
+                                    <option value="E2">E2</option>
+                                    <option value="E3">E3</option>
+                                    <option value="E4">E4</option>
+                                    <option value="F1">F1</option>
+                                    <option value="F2">F2</option>
+                                    <option value="F3">F3</option>
+                                    <option value="F4">F4</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -247,12 +297,32 @@
                         <h6>模拟学生答题</h6>
                         <div class="row">
                             <div class="col-md-3">
-                                <select class="form-control" id="answer-seat-id">
+                                <select class="form-control" id="answer-seat-id" title="选择答题座位">
                                     <option value="">选择座位</option>
                                     <option value="A1">A1</option>
                                     <option value="A2">A2</option>
+                                    <option value="A3">A3</option>
+                                    <option value="A4">A4</option>
                                     <option value="B1">B1</option>
+                                    <option value="B2">B2</option>
+                                    <option value="B3">B3</option>
+                                    <option value="B4">B4</option>
                                     <option value="C1">C1</option>
+                                    <option value="C2">C2</option>
+                                    <option value="C3">C3</option>
+                                    <option value="C4">C4</option>
+                                    <option value="D1">D1</option>
+                                    <option value="D2">D2</option>
+                                    <option value="D3">D3</option>
+                                    <option value="D4">D4</option>
+                                    <option value="E1">E1</option>
+                                    <option value="E2">E2</option>
+                                    <option value="E3">E3</option>
+                                    <option value="E4">E4</option>
+                                    <option value="F1">F1</option>
+                                    <option value="F2">F2</option>
+                                    <option value="F3">F3</option>
+                                    <option value="F4">F4</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -327,10 +397,11 @@
             responseDiv.textContent = `[${timestamp}] ERROR ${method} ${url}\n\n${error.message || error}`;
         }
 
-        // 生成座位网格
+        // 生成座位网格 - 支持自适应扩展
         function generateSeatGrid() {
             const seatGrid = document.getElementById('seat-grid');
-            const rows = ['A', 'B', 'C', 'D'];
+            // 扩展到6行以支持更多学生
+            const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
             const cols = [1, 2, 3, 4];
             
             seatGrid.innerHTML = '';
@@ -341,7 +412,7 @@
                     const seatDiv = document.createElement('div');
                     seatDiv.className = 'seat seat-empty';
                     seatDiv.id = `seat-${seatId}`;
-                    seatDiv.textContent = seatId;
+                    seatDiv.innerHTML = `<div class="seat-id">${seatId}</div>`;
                     seatGrid.appendChild(seatDiv);
                 });
             });
@@ -362,7 +433,8 @@
                 // 重置所有座位
                 document.querySelectorAll('.seat').forEach(seat => {
                     seat.className = 'seat seat-empty';
-                    seat.textContent = seat.id.replace('seat-', '');
+                    const seatId = seat.id.replace('seat-', '');
+                    seat.innerHTML = `<div class="seat-id">${seatId}</div>`;
                 });
                 
                 // 更新有学生的座位
@@ -371,7 +443,10 @@
                         const seatElement = document.getElementById(`seat-${student.seatId}`);
                         if (seatElement) {
                             seatElement.className = `seat seat-occupied`;
-                            seatElement.innerHTML = `<strong>${student.seatId}</strong><br><small>${student.studentName}</small>`;
+                            seatElement.innerHTML = `
+                                <div class="seat-id">${student.seatId}</div>
+                                <div class="seat-name">${student.studentName}</div>
+                            `;
                             
                             // 根据答题状态添加不同的样式
                             if (student.lastAnswer) {
@@ -581,55 +656,72 @@
 
         async function clearAllAnswers() {
             try {
-                const response = await fetch(`${API_BASE}/interactive/students/clear-answers`, {
+                const response = await fetch(`${API_BASE}/interactive/statistics/clear`, {
                     method: 'POST'
                 });
                 const result = await response.json();
-                displayResponse(result, '/interactive/students/clear-answers', 'POST');
+                displayResponse(result, '/interactive/statistics/clear', 'POST');
                 refreshSeats();
             } catch (error) {
-                displayError(error, '/interactive/students/clear-answers', 'POST');
+                displayError(error, '/interactive/statistics/clear', 'POST');
             }
         }
 
         // 统计分析API
         async function getAnswerStatistics() {
             try {
-                const response = await fetch(`${API_BASE}/interactive/statistics/answers`);
+                const response = await fetch(`${API_BASE}/interactive/statistics`);
                 const result = await response.json();
-                displayResponse(result, '/interactive/statistics/answers');
+                displayResponse(result, '/interactive/statistics');
             } catch (error) {
-                displayError(error, '/interactive/statistics/answers');
+                displayError(error, '/interactive/statistics');
             }
         }
 
         async function getParticipationRate() {
             try {
-                const response = await fetch(`${API_BASE}/interactive/statistics/participation-rate`);
+                const response = await fetch(`${API_BASE}/interactive/statistics`);
                 const result = await response.json();
-                displayResponse(result, '/interactive/statistics/participation-rate');
+                if (result.success && result.data.currentQuestionStats) {
+                    const stats = result.data.currentQuestionStats;
+                    const rate = stats.totalAnswered / result.data.totalStudents * 100;
+                    displayResponse({success: true, data: {participationRate: rate.toFixed(1) + '%'}}, '/interactive/statistics (参与率)');
+                } else {
+                    displayResponse(result, '/interactive/statistics (参与率)');
+                }
             } catch (error) {
-                displayError(error, '/interactive/statistics/participation-rate');
+                displayError(error, '/interactive/statistics (参与率)');
             }
         }
 
         async function getCorrectRate() {
             try {
-                const response = await fetch(`${API_BASE}/interactive/statistics/correct-rate`);
+                const response = await fetch(`${API_BASE}/interactive/statistics`);
                 const result = await response.json();
-                displayResponse(result, '/interactive/statistics/correct-rate');
+                if (result.success && result.data.currentQuestionStats) {
+                    const stats = result.data.currentQuestionStats;
+                    const rate = stats.correctAnswers / stats.totalAnswered * 100;
+                    displayResponse({success: true, data: {correctRate: rate.toFixed(1) + '%'}}, '/interactive/statistics (正确率)');
+                } else {
+                    displayResponse(result, '/interactive/statistics (正确率)');
+                }
             } catch (error) {
-                displayError(error, '/interactive/statistics/correct-rate');
+                displayError(error, '/interactive/statistics (正确率)');
             }
         }
 
         async function getAverageTime() {
             try {
-                const response = await fetch(`${API_BASE}/interactive/statistics/average-time`);
+                const response = await fetch(`${API_BASE}/interactive/statistics`);
                 const result = await response.json();
-                displayResponse(result, '/interactive/statistics/average-time');
+                if (result.success && result.data.currentQuestionStats) {
+                    const stats = result.data.currentQuestionStats;
+                    displayResponse({success: true, data: {averageTime: stats.averageResponseTime + 'ms'}}, '/interactive/statistics (平均时间)');
+                } else {
+                    displayResponse(result, '/interactive/statistics (平均时间)');
+                }
             } catch (error) {
-                displayError(error, '/interactive/statistics/average-time');
+                displayError(error, '/interactive/statistics (平均时间)');
             }
         }
 

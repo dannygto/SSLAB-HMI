@@ -2,6 +2,7 @@ package com.sslab.hmi.data.repository
 
 import android.util.Log
 import com.sslab.hmi.data.model.*
+import com.sslab.hmi.data.model.ApiResponse
 import com.sslab.hmi.data.network.SSLabApiService
 import com.sslab.hmi.data.network.WebSocketService
 import kotlinx.coroutines.CoroutineScope
@@ -101,7 +102,7 @@ class DeviceRepository @Inject constructor(
                     _devices.value = apiResponse.data
                     Log.d(TAG, "Loaded ${_devices.value.size} devices")
                 } else {
-                    _errorMessage.value = apiResponse?.error ?: "Failed to load devices"
+                    _errorMessage.value = (apiResponse as? com.sslab.hmi.data.model.ApiResponse<*>)?.error ?: "Failed to load devices"
                 }
             } else {
                 _errorMessage.value = "HTTP ${response.code()}: ${response.message()}"
@@ -157,7 +158,7 @@ class DeviceRepository @Inject constructor(
                     Log.d(TAG, "Added device: ${device.name}")
                     Result.success(apiResponse.data)
                 } else {
-                    Result.failure(Exception(apiResponse?.error ?: "Failed to add device"))
+                    Result.failure(Exception((apiResponse as? com.sslab.hmi.data.model.ApiResponse<*>)?.error ?: "Failed to add device"))
                 }
             } else {
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))
@@ -200,7 +201,7 @@ class DeviceRepository @Inject constructor(
                     Log.d(TAG, "Sent command to device $deviceId: ${command.command}")
                     Result.success(apiResponse.data ?: emptyMap())
                 } else {
-                    Result.failure(Exception(apiResponse?.error ?: "Failed to send command"))
+                    Result.failure(Exception((apiResponse as? com.sslab.hmi.data.model.ApiResponse<*>)?.error ?: "Failed to send command"))
                 }
             } else {
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))
@@ -222,7 +223,7 @@ class DeviceRepository @Inject constructor(
                 if (apiResponse?.success == true && apiResponse.data != null) {
                     Result.success(apiResponse.data)
                 } else {
-                    Result.failure(Exception(apiResponse?.error ?: "Failed to get environment data"))
+                    Result.failure(Exception((apiResponse as? com.sslab.hmi.data.model.ApiResponse<*>)?.error ?: "Failed to get environment data"))
                 }
             } else {
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))
@@ -244,7 +245,7 @@ class DeviceRepository @Inject constructor(
                 if (apiResponse?.success == true && apiResponse.data != null) {
                     Result.success(apiResponse.data)
                 } else {
-                    Result.failure(Exception(apiResponse?.error ?: "Failed to get power data"))
+                    Result.failure(Exception((apiResponse as? com.sslab.hmi.data.model.ApiResponse<*>)?.error ?: "Failed to get power data"))
                 }
             } else {
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))
@@ -267,7 +268,7 @@ class DeviceRepository @Inject constructor(
                     Log.d(TAG, "Discovered ${apiResponse.data.size} devices")
                     Result.success(apiResponse.data)
                 } else {
-                    Result.failure(Exception(apiResponse?.error ?: "Failed to scan devices"))
+                    Result.failure(Exception((apiResponse as? com.sslab.hmi.data.model.ApiResponse<*>)?.error ?: "Failed to scan devices"))
                 }
             } else {
                 Result.failure(Exception("HTTP ${response.code()}: ${response.message()}"))

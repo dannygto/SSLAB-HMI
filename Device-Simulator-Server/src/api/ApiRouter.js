@@ -1379,10 +1379,36 @@ class ApiRouter {
                     lastAnswer: null,
                     responseTime: null,
                     isCorrect: null,
-                    assignTime: null
+                    assignTime: null,
+                    isOnline: false
                 });
             }
         }
+
+        // 添加一些演示学生数据
+        const demoStudents = [
+            { seatId: 'A1', name: '张小明', isOnline: true },
+            { seatId: 'A2', name: '李小红', isOnline: true },
+            { seatId: 'A3', name: '王小华', isOnline: false },
+            { seatId: 'A4', name: '刘小军', isOnline: true },
+            { seatId: 'B2', name: '陈小美', isOnline: true },
+            { seatId: 'B3', name: '林小强', isOnline: true },
+            { seatId: 'C1', name: '周小雨', isOnline: false },
+            { seatId: 'C4', name: '黄小光', isOnline: true }
+        ];
+
+        demoStudents.forEach(student => {
+            this.interactiveManager.students.set(student.seatId, {
+                seatId: student.seatId,
+                studentName: student.name,
+                status: student.isOnline ? 'WAITING' : 'OFFLINE',
+                lastAnswer: null,
+                responseTime: null,
+                isCorrect: null,
+                assignTime: Date.now(),
+                isOnline: student.isOnline
+            });
+        });
 
         // 创建默认的互动教学设备
         this.createInteractiveDevices();
@@ -2426,7 +2452,7 @@ class ApiRouter {
             if (!currentQuestionId) {
                 res.json({
                     success: true,
-                    question: null,
+                    data: null,
                     message: '没有当前题目'
                 });
                 return;
@@ -2435,7 +2461,7 @@ class ApiRouter {
             const question = this.interactiveManager.questions.get(currentQuestionId);
             res.json({
                 success: true,
-                question: question || null
+                data: question || null
             });
         } catch (error) {
             res.status(500).json({

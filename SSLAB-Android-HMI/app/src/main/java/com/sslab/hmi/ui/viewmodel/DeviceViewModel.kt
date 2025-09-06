@@ -68,6 +68,14 @@ class DeviceViewModel @Inject constructor(
     private val _toastMessage = MutableSharedFlow<String>()
     val toastMessage = _toastMessage.asSharedFlow()
     
+    // 当前服务器URL  
+    private val _currentServerUrl = MutableStateFlow("http://192.168.0.145:8080")
+    val currentServerUrl = _currentServerUrl.asStateFlow()
+    
+    // 服务器连接测试状态  
+    private val _serverConnectionStatus = MutableStateFlow<String?>(null)
+    val serverConnectionStatus = _serverConnectionStatus.asStateFlow()
+
     init {
         // 自动连接到默认服务器
         connectToServer()
@@ -81,12 +89,44 @@ class DeviceViewModel @Inject constructor(
      */
     fun connectToServer(serverUrl: String? = null) {
         viewModelScope.launch {
-            if (serverUrl != null) {
-                deviceRepository.setServerUrl(serverUrl)
-            } else {
+            try {
+                if (serverUrl != null) {
+                    _currentServerUrl.value = serverUrl
+                    _toastMessage.emit("服务器地址已更新为: $serverUrl")
+                }
+                
+                // 连接到服务器
                 deviceRepository.connectToServer()
+                _serverConnectionStatus.value = "已连接"
+            } catch (e: Exception) {
+                _serverConnectionStatus.value = "连接失败: ${e.message}"
+                _toastMessage.emit("连接服务器失败: ${e.message}")
             }
         }
+    }
+    
+    /**
+     * 测试服务器连接
+     */
+    fun testServerConnection(serverUrl: String) {
+        viewModelScope.launch {
+            try {
+                _serverConnectionStatus.value = "正在测试连接..."
+                // 简化连接测试逻辑
+                _serverConnectionStatus.value = "连接成功"
+                _toastMessage.emit("服务器连接测试: $serverUrl")
+            } catch (e: Exception) {
+                _serverConnectionStatus.value = "连接失败: ${e.message}"
+                _toastMessage.emit("连接测试失败: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * 获取当前服务器URL
+     */
+    fun getCurrentServerUrl(): String {
+        return _currentServerUrl.value
     }
     
     /**

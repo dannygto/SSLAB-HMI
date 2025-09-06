@@ -393,7 +393,6 @@ private fun SecondaryIconButton(
         )
     }
 }
-}
 
 @Composable
 private fun StatusItem(

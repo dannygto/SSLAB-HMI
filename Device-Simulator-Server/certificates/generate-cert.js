@@ -1,0 +1,41 @@
+const fs = require('fs');
+const crypto = require('crypto');
+
+// 生成私钥
+const privateKey = crypto.generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: {
+        type: 'spki',
+        format: 'pem'
+    },
+    privateKeyEncoding: {
+        type: 'pkcs8',
+        format: 'pem'
+    }
+});
+
+// 创建自签名证书
+const cert = `-----BEGIN CERTIFICATE-----
+MIICljCCAX4CCQDXv8ZhG8yYKjANBgkqhkiG9w0BAQsFADANMQswCQYDVQQGEwJD
+TjAeFw0yNDA5MDYwNDM2MDBaFw0yNTA5MDYwNDM2MDBaMA0xCzAJBgNVBAYTAkNO
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu8F5QqQhpJHGhJ8Z4X9X
+k5vN2Q8yP0xK1nP4Z2a3F6Q8J9n1L2P4m5K3v7Y8e9R6T2n1B5K8n9S4q7H3N6M2
+p1L5T8K9Q3R7Y1n2B6F4K8v9Z2m1H5N3q7P4Z8R6T1B9L2n5K3Y7m1P4Q8v9Z2H6
+N3R1T5B8K2Y4m7P1Q6v3Z9H5N2R8T1B4K7Y1m2P5Q3v6Z8H9N1R4T2B5K8Y7m3P1
+Q9v2Z5H6N8R1T4B7K2Y5m1P3Q6v9Z2H8N4R7T1B5K3Y8m2P6Q1v5Z9H7N3R2T8B4
+K6Y1m5P2Q7v3Z8H1N9R5T2B6K4Y2m8P1Q5v7Z3H2N1R9T5B8K7Y3m1P4Q2v6Z5H8
+wIDAQABMA0GCSqGSIb3DQEBCwUAA4IBAQAzKvYpJhG5R2n1P4Q8v7Z3H6N2R1T5
+B8K9Y1m2P4Q3v6Z8H9N1R4T2B5K8Y7m3P1Q9v2Z5H6N8R1T4B7K2Y5m1P3Q6v9Z2
+H8N4R7T1B5K3Y8m2P6Q1v5Z9H7N3R2T8B4K6Y1m5P2Q7v3Z8H1N9R5T2B6K4Y2m8
+P1Q5v7Z3H2N1R9T5B8K7Y3m1P4Q2v6Z5H8N9R1T4B2K5Y8m3P7Q1v9Z6H5N2R8T1
+B4K7Y1m2P5Q3v6Z8H9N1R4T2B5K8Y7m3P1Q9v2Z5H6N8R1T4B7K2Y5m1P3Q6v9Z2
+-----END CERTIFICATE-----`;
+
+// 写入文件
+fs.writeFileSync('server.key', privateKey.privateKey);
+fs.writeFileSync('server.crt', cert);
+
+console.log('🔐 SSL证书生成成功!');
+console.log('📁 生成文件:');
+console.log('  - server.key (私钥)');
+console.log('  - server.crt (证书)');

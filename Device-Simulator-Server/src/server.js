@@ -1,9 +1,11 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const path = require('path');
 
 const DeviceManager = require('./device/DeviceManager');
 const ApiRouter = require('./api/ApiRouter');
@@ -17,15 +19,12 @@ const DiscoveryService = require('./discovery/DiscoveryService');
 class DeviceSimulatorServer {
     constructor() {
         this.app = express();
-        this.server = http.createServer(this.app);
-        this.io = socketIo(this.server, {
-            cors: {
-                origin: "*",
-                methods: ["GET", "POST"]
-            }
-        });
+        
+        // 尝试启用HTTPS
+        this.setupServers();
         
         this.port = process.env.PORT || 8080;
+        this.httpsPort = process.env.HTTPS_PORT || 8443;
         this.deviceManager = new DeviceManager();
         this.discoveryService = new DiscoveryService(this.deviceManager);
         
@@ -37,6 +36,51 @@ class DeviceSimulatorServer {
         this.setupRoutes();
         this.setupWebSocket();
         this.setupDiscovery();
+    }
+    
+    /**
+     * 设置HTTP和HTTPS服务器
+     */
+    setupServers() {
+        // HTTP服务器
+        this.server = http.createServer(this.app);
+        
+        try {
+            // 尝试加载SSL证书
+            const keyPath = path.join(__dirname, '..', 'certificates', 'server.key');
+            const certPath = path.join(__dirname, '..', 'certificates', 'server.crt');
+            
+            if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+                const options = {
+                    key: fs.readFileSync(keyPath),
+                    cert: fs.readFileSync(certPath)
+                };
+                
+                this.httpsServer = https.createServer(options, this.app);
+                console.log('🔐 HTTPS服务器已配置');
+            } else {
+                console.log('⚠️  SSL证书未找到，仅启动HTTP服务器');
+            }
+        } catch (error) {
+            console.log('⚠️  SSL配置失败，仅启动HTTP服务器:', error.message);
+        }
+        
+        // Socket.IO配置
+        this.io = socketIo(this.server, {
+            cors: {
+                origin: "*",
+                methods: ["GET", "POST"]
+            }
+        });
+        
+        if (this.httpsServer) {
+            this.httpsIo = socketIo(this.httpsServer, {
+                cors: {
+                    origin: "*",
+                    methods: ["GET", "POST"]
+                }
+            });
+        }
     }
     
     /**
@@ -156,20 +200,32 @@ class DeviceSimulatorServer {
      * 启动服务器
      */
     start() {
+        // 启动HTTP服务器
         this.server.listen(this.port, () => {
-            console.log(`\nSSLAB设备模拟器服务器启动成功`);
-            console.log(`Web界面: http://localhost:${this.port}`);
-            console.log(`API接口: http://localhost:${this.port}/api`);
-            console.log(`WebSocket: ws://localhost:${this.port}`);
-            console.log(`mDNS发现服务已启动`);
-            console.log(`\n可用页面:`);
-            console.log(`   主页:     http://localhost:${this.port}/`);
-            console.log(`   设备管理: http://localhost:${this.port}/devices`);
-            console.log(`   分组管理: http://localhost:${this.port}/groups`);
-            console.log(`   实时监控: http://localhost:${this.port}/monitor`);
-            console.log(`   系统管理: http://localhost:${this.port}/admin`);
-            console.log(`\n提示: 请通过Web界面手动添加设备`);
+            console.log(`\n🌐 SSLAB设备模拟器服务器启动成功`);
+            console.log(`📱 HTTP服务: http://192.168.0.145:${this.port}`);
+            console.log(`🌐 Web界面: http://192.168.0.145:${this.port}`);
+            console.log(`📡 互动教学API: http://192.168.0.145:${this.port}/api/interactive`);
+            console.log(`🔗 设备管理API: http://192.168.0.145:${this.port}/api/devices`);
+            console.log(`🔌 WebSocket: ws://192.168.0.145:${this.port}`);
+            console.log(`📡 mDNS发现服务已启动`);
+            console.log(`\n📋 可用页面:`);
+            console.log(`   主页:     http://192.168.0.145:${this.port}/`);
+            console.log(`   设备管理: http://192.168.0.145:${this.port}/devices`);
+            console.log(`   分组管理: http://192.168.0.145:${this.port}/groups`);
+            console.log(`   实时监控: http://192.168.0.145:${this.port}/monitor`);
+            console.log(`   系统管理: http://192.168.0.145:${this.port}/admin`);
+            console.log(`   互动教学: http://192.168.0.145:${this.port}/interactive-teaching`);
         });
+        
+        // 启动HTTPS服务器（如果可用）
+        if (this.httpsServer) {
+            this.httpsServer.listen(this.httpsPort, () => {
+                console.log(`🔐 HTTPS服务: https://192.168.0.145:${this.httpsPort}`);
+                console.log(`🔒 安全Web界面: https://192.168.0.145:${this.httpsPort}`);
+                console.log(`🛡️  安全API: https://192.168.0.145:${this.httpsPort}/api/interactive`);
+            });
+        }
     }
     
     /**
@@ -180,9 +236,19 @@ class DeviceSimulatorServer {
         
         this.discoveryService.stop();
         this.server.close(() => {
-            console.log('服务器已关闭');
-            process.exit(0);
+            console.log('HTTP服务器已关闭');
         });
+        
+        if (this.httpsServer) {
+            this.httpsServer.close(() => {
+                console.log('HTTPS服务器已关闭');
+            });
+        }
+        
+        setTimeout(() => {
+            console.log('服务器已完全关闭');
+            process.exit(0);
+        }, 1000);
     }
 }
 

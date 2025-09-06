@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -18,12 +19,292 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cn.sslab.hmi.ui.theme.BlueGradientColors
 
 /**
- * 学生座位组件
+ * 自适应学生座位网格布局 - 支持最多48个座位，可滚动
+ */
+@Composable
+fun CompactStudentSeatsGrid(
+    seats: List<StudentSeat>,
+    onSeatClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    // 动态计算行数和列数
+    val totalSeats = seats.size
+    val (rows, cols) = when {
+        totalSeats <= 16 -> Pair(listOf("A", "B", "C", "D"), 4)
+        totalSeats <= 24 -> Pair(listOf("A", "B", "C", "D", "E", "F"), 4)
+        totalSeats <= 32 -> Pair(listOf("A", "B", "C", "D", "E", "F", "G", "H"), 4)
+        totalSeats <= 40 -> Pair(listOf("A", "B", "C", "D", "E"), 8)
+        else -> Pair(listOf("A", "B", "C", "D", "E", "F"), 8) // 最多48个座位 (6x8)
+    }
+    
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = BlueGradientColors.BackgroundPrimary
+        ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp)
+        ) {
+            // 标题和状态图例
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "学生座位布局 (${totalSeats}个座位)",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = BlueGradientColors.PrimaryText,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp // 增大标题字体
+                )
+                
+                // 紧凑版状态图例
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    SeatStatus.values().forEach { status ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(
+                                        when (status) {
+                                            SeatStatus.EMPTY -> Color.Gray
+                                            SeatStatus.WAITING -> Color.Blue
+                                            SeatStatus.CORRECT -> Color.Green
+                                            SeatStatus.INCORRECT -> Color.Red
+                                            SeatStatus.TIMEOUT -> Color.Yellow
+                                        }, CircleShape
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = when (status) {
+                                    SeatStatus.EMPTY -> "空"
+                                    SeatStatus.WAITING -> "等"
+                                    SeatStatus.CORRECT -> "对"
+                                    SeatStatus.INCORRECT -> "错"
+                                    SeatStatus.TIMEOUT -> "超"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = BlueGradientColors.SecondaryText,
+                                fontSize = 12.sp, // 增大图例字体
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // 可滚动的座位网格布局
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                items(rows) { row ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(if (totalSeats <= 16) 80.dp else if (totalSeats <= 24) 70.dp else 60.dp), // 动态调整行高
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // 行标签 - 自适应尺寸
+                        Box(
+                            modifier = Modifier
+                                .width(if (totalSeats <= 24) 24.dp else 20.dp)
+                                .fillMaxHeight()
+                                .background(
+                                    BlueGradientColors.AccentBlue.copy(alpha = 0.1f),
+                                    RoundedCornerShape(6.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = row,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = BlueGradientColors.AccentBlue,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = if (totalSeats <= 24) 14.sp else 12.sp
+                            )
+                        }
+                        
+                        // 该行的座位
+                        (1..cols).forEach { col ->
+                            val seatId = "$row$col"
+                            val seat = seats.find { it.seatId == seatId }
+                            if (seat != null) {
+                                AdaptiveStudentSeatCard(
+                                    seat = seat,
+                                    onSeatClick = onSeatClick,
+                                    totalSeats = totalSeats,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxHeight()
+                                )
+                            } else {
+                                // 空位占位符
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 自适应学生座位卡片 - 根据总座位数调整大小和字体
+ */
+@Composable
+fun AdaptiveStudentSeatCard(
+    seat: StudentSeat,
+    onSeatClick: (String) -> Unit,
+    totalSeats: Int,
+    modifier: Modifier = Modifier
+) {
+    // 根据座位总数动态调整字体大小
+    val seatIdFontSize = when {
+        totalSeats <= 16 -> 16.sp
+        totalSeats <= 24 -> 14.sp
+        totalSeats <= 32 -> 12.sp
+        else -> 10.sp
+    }
+    
+    val nameFontSize = when {
+        totalSeats <= 16 -> 12.sp
+        totalSeats <= 24 -> 11.sp
+        totalSeats <= 32 -> 10.sp
+        else -> 9.sp
+    }
+    
+    val answerFontSize = when {
+        totalSeats <= 16 -> 18.sp
+        totalSeats <= 24 -> 16.sp
+        totalSeats <= 32 -> 14.sp
+        else -> 12.sp
+    }
+    
+    Card(
+        modifier = modifier
+            .clickable { onSeatClick(seat.seatId) },
+        colors = CardDefaults.cardColors(
+            containerColor = when (seat.status) {
+                SeatStatus.EMPTY -> Color.Gray.copy(alpha = 0.1f)
+                SeatStatus.WAITING -> Color.Blue.copy(alpha = 0.1f)
+                SeatStatus.CORRECT -> Color.Green.copy(alpha = 0.1f)
+                SeatStatus.INCORRECT -> Color.Red.copy(alpha = 0.1f)
+                SeatStatus.TIMEOUT -> Color.Yellow.copy(alpha = 0.1f)
+            }
+        ),
+        border = BorderStroke(
+            1.dp, when (seat.status) {
+                SeatStatus.EMPTY -> Color.Gray
+                SeatStatus.WAITING -> Color.Blue
+                SeatStatus.CORRECT -> Color.Green
+                SeatStatus.INCORRECT -> Color.Red
+                SeatStatus.TIMEOUT -> Color.Yellow
+            }
+        ),
+        shape = RoundedCornerShape(if (totalSeats <= 24) 8.dp else 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(if (totalSeats <= 24) 4.dp else 2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // 座位号
+            Text(
+                text = seat.seatId,
+                style = MaterialTheme.typography.titleMedium,
+                color = when (seat.status) {
+                    SeatStatus.EMPTY -> Color.Gray
+                    SeatStatus.WAITING -> Color.Blue
+                    SeatStatus.CORRECT -> Color.Green
+                    SeatStatus.INCORRECT -> Color.Red
+                    SeatStatus.TIMEOUT -> Color.Yellow
+                },
+                fontWeight = FontWeight.Bold,
+                fontSize = seatIdFontSize
+            )
+            
+            if (seat.studentName != null) {
+                // 学生姓名
+                Text(
+                    text = seat.studentName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BlueGradientColors.PrimaryText,
+                    fontSize = nameFontSize,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                
+                // 答案显示
+                if (seat.lastAnswer != null) {
+                    Text(
+                        text = seat.lastAnswer,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = when (seat.status) {
+                            SeatStatus.CORRECT -> Color.Green
+                            SeatStatus.INCORRECT -> Color.Red
+                            SeatStatus.TIMEOUT -> Color.Yellow
+                            else -> Color.Blue
+                        },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = answerFontSize
+                    )
+                } else {
+                    // 状态指示器
+                    Box(
+                        modifier = Modifier
+                            .size(if (totalSeats <= 24) 8.dp else 6.dp)
+                            .background(
+                                when (seat.status) {
+                                    SeatStatus.WAITING -> Color.Blue
+                                    else -> Color.Gray
+                                }, CircleShape
+                            )
+                    )
+                }
+            } else {
+                // 空座位显示
+                Text(
+                    text = "空座位",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    fontSize = if (totalSeats <= 24) 10.sp else 8.sp,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 学生座位组件 - 保持原有的大尺寸版本用于其他地方
  */
 @Composable
 fun StudentSeatCard(
@@ -455,9 +736,10 @@ fun AnswerStatisticsCard(
         ) {
             Text(
                 text = "答题统计",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = BlueGradientColors.PrimaryText,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp // 增大统计标题字体
             )
             
             if (statistics != null) {
@@ -493,7 +775,7 @@ fun AnswerStatisticsCard(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 // 答题时间统计
-                if (statistics.fastestTime > 0) {
+                if (statistics.fastestTime != null && statistics.fastestTime > 0) {
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = BlueGradientColors.AccentGreen.copy(alpha = 0.1f)
@@ -516,7 +798,7 @@ fun AnswerStatisticsCard(
                             Spacer(modifier = Modifier.width(8.dp))
                             
                             Text(
-                                text = "最快答题时间: ${statistics.fastestTime / 1000.0}秒",
+                                text = "最快答题时间: ${statistics.fastestTime!! / 1000.0}秒",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = BlueGradientColors.AccentGreen,
                                 fontWeight = FontWeight.Medium
@@ -555,15 +837,19 @@ fun StatisticItem(
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
-            color = color,
-            fontWeight = FontWeight.Bold
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            color = color
         )
         Text(
             text = title,
-            style = MaterialTheme.typography.labelSmall,
-            color = BlueGradientColors.SecondaryText,
-            fontSize = 10.sp
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
+            ),
+            color = BlueGradientColors.SecondaryText
         )
     }
 }
