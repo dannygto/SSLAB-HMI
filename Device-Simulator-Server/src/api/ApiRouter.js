@@ -1379,139 +1379,224 @@ class ApiRouter {
                     lastAnswer: null,
                     responseTime: null,
                     isCorrect: null,
-                    assignTime: null,
-                    isOnline: false
+                    assignTime: null
                 });
             }
         }
 
-        // 添加一些演示学生数据
-        const demoStudents = [
-            { seatId: 'A1', name: '张小明', isOnline: true },
-            { seatId: 'A2', name: '李小红', isOnline: true },
-            { seatId: 'A3', name: '王小华', isOnline: false },
-            { seatId: 'A4', name: '刘小军', isOnline: true },
-            { seatId: 'B2', name: '陈小美', isOnline: true },
-            { seatId: 'B3', name: '林小强', isOnline: true },
-            { seatId: 'C1', name: '周小雨', isOnline: false },
-            { seatId: 'C4', name: '黄小光', isOnline: true }
-        ];
+        // 创建100个不同类型的设备用于开发测试
+        this.create100DiverseDevices();
 
-        demoStudents.forEach(student => {
-            this.interactiveManager.students.set(student.seatId, {
-                seatId: student.seatId,
-                studentName: student.name,
-                status: student.isOnline ? 'WAITING' : 'OFFLINE',
-                lastAnswer: null,
-                responseTime: null,
-                isCorrect: null,
-                assignTime: Date.now(),
-                isOnline: student.isOnline
-            });
-        });
-
-        // 创建默认的互动教学设备
-        this.createInteractiveDevices();
-
-        console.log('📚 互动教学系统已初始化');
+        console.log('🎯 设备模拟器初始化完成');
     }
 
     /**
-     * 创建互动教学设备
+     * 创建100个不同类型的设备用于开发测试
      */
-    createInteractiveDevices() {
+    create100DiverseDevices() {
         try {
-            // 创建互动教学分组
-            const interactiveGroupId = 'interactive-teaching';
-            this.deviceManager.addGroup(interactiveGroupId, '互动教学系统', '互动教学相关设备分组');
+            // 创建不同分组
+            const groups = [
+                { id: 'interactive-teaching', name: '互动教学系统', desc: '互动教学相关设备' },
+                { id: 'environment-control', name: '环境控制系统', desc: '温湿度、照明、通风设备' },
+                { id: 'power-management', name: '电源管理系统', desc: '学生电源终端分组' },
+                { id: 'classroom-automation', name: '教室自动化', desc: '窗帘、升降台等设备' },
+                { id: 'monitoring-sensors', name: '监测传感器', desc: '各类环境监测设备' }
+            ];
 
-            // 创建互动教学控制器
-            const controller = this.deviceManager.addDevice({
-                name: '互动教学主控制器',
-                type: DeviceType.INTERACTIVE_CONTROLLER,
-                groupId: interactiveGroupId,
-                config: {
-                    autoStart: true,
-                    isActive: false,
-                    currentQuestionId: null,
-                    startTime: null,
-                    timeLimit: 0,
-                    autoNext: false,
-                    totalQuestions: 0,
-                    currentIndex: 0,
-                    questionBank: [],
-                    connectedTerminals: 0,
-                    maxTerminals: 16,
-                    signalQuality: 'excellent'
-                }
+            groups.forEach(group => {
+                this.deviceManager.addGroup(group.id, group.name, group.desc);
             });
 
-            // 创建互动教学显示设备
-            const display = this.deviceManager.addDevice({
-                name: '互动教学大屏显示器',
-                type: DeviceType.INTERACTIVE_DISPLAY,
-                groupId: interactiveGroupId,
-                config: {
-                    autoStart: true,
-                    currentQuestionId: null,
-                    questionContent: '',
-                    options: [],
-                    timeRemaining: 0,
-                    isActive: false,
-                    brightness: 90,
-                    resolution: '1920x1080',
-                    totalStudents: 0,
-                    answered: 0,
-                    correct: 0,
-                    incorrect: 0,
-                    timeout: 0
-                }
-            });
+            let deviceCount = 0;
+            const deviceTypes = Object.values(DeviceType);
 
-            // 创建16个学生终端设备 (A1-D4)
-            const rows = ['A', 'B', 'C', 'D'];
-            for (const row of rows) {
-                for (let col = 1; col <= 4; col++) {
-                    const seatId = `${row}${col}`;
-                    const terminal = this.deviceManager.addDevice({
-                        name: `学生终端-${seatId}`,
-                        type: DeviceType.INTERACTIVE_STUDENT_TERMINAL,
-                        groupId: interactiveGroupId,
-                        config: {
-                            autoStart: true,
-                            seatId: seatId,
-                            studentName: null,
-                            status: 'EMPTY',
-                            currentQuestionId: null,
-                            selectedAnswer: null,
-                            submitTime: null,
-                            responseTime: null,
-                            isCorrect: null,
-                            screenOn: true,
-                            buttonLights: { A: false, B: false, C: false, D: false },
-                            buzzer: false,
-                            networkSignal: 80 + Math.random() * 20
-                        }
-                    });
-
-                    if (terminal && terminal.config?.autoStart) {
-                        this.deviceManager.startDevice(terminal.id);
+            // 创建互动教学设备 (20个)
+            for (let i = 1; i <= 20; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `互动教学终端-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.INTERACTIVE_STUDENT_TERMINAL,
+                    groupId: 'interactive-teaching',
+                    config: {
+                        autoStart: true,
+                        seatId: `ST${String(i).padStart(2, '0')}`,
+                        studentName: null,
+                        status: 'EMPTY',
+                        screenOn: true,
+                        networkSignal: 75 + Math.random() * 25
                     }
-                }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
             }
 
-            if (controller && controller.config?.autoStart) {
-                this.deviceManager.startDevice(controller.id);
+            // 创建环境监测设备 (15个)
+            for (let i = 1; i <= 15; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `环境监测器-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.ENVIRONMENT_MONITOR,
+                    groupId: 'monitoring-sensors',
+                    config: {
+                        autoStart: true,
+                        temperature: 20 + Math.random() * 10,
+                        humidity: 40 + Math.random() * 30,
+                        co2: 400 + Math.random() * 200,
+                        pm25: Math.random() * 50
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
             }
 
-            if (display && display.config?.autoStart) {
-                this.deviceManager.startDevice(display.id);
+            // 创建学生电源终端 (20个)
+            for (let i = 1; i <= 20; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `学生电源终端-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.STUDENT_POWER_TERMINAL,
+                    groupId: 'power-management',
+                    config: {
+                        autoStart: true,
+                        voltage: 220 + Math.random() * 20,
+                        current: Math.random() * 5,
+                        power: Math.random() * 1000,
+                        isOn: Math.random() > 0.5
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
             }
 
-            console.log('🎯 互动教学设备已创建：1个控制器，1个显示器，16个学生终端');
+            // 创建环境控制设备 (10个)
+            for (let i = 1; i <= 10; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `环境控制器-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.ENVIRONMENT_CONTROLLER,
+                    groupId: 'environment-control',
+                    config: {
+                        autoStart: true,
+                        targetTemp: 22 + Math.random() * 6,
+                        fanSpeed: Math.floor(Math.random() * 5),
+                        heaterOn: Math.random() > 0.7,
+                        mode: ['auto', 'manual', 'eco'][Math.floor(Math.random() * 3)]
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
+            }
+
+            // 创建窗帘控制设备 (8个)
+            for (let i = 1; i <= 8; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `窗帘控制器-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.CURTAIN_CONTROLLER,
+                    groupId: 'classroom-automation',
+                    config: {
+                        autoStart: true,
+                        position: Math.floor(Math.random() * 101),
+                        isMoving: false,
+                        direction: 'stopped',
+                        autoMode: Math.random() > 0.5
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
+            }
+
+            // 创建灯光控制设备 (12个)
+            for (let i = 1; i <= 12; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `灯光控制器-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.LIGHTING_CONTROLLER,
+                    groupId: 'classroom-automation',
+                    config: {
+                        autoStart: true,
+                        brightness: Math.floor(Math.random() * 101),
+                        isOn: Math.random() > 0.3,
+                        colorTemp: 3000 + Math.random() * 3000,
+                        zone: `Zone-${Math.ceil(i/3)}`
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
+            }
+
+            // 创建升降控制设备 (5个)
+            for (let i = 1; i <= 5; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `升降控制器-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.LIFT_CONTROLLER,
+                    groupId: 'classroom-automation',
+                    config: {
+                        autoStart: true,
+                        height: Math.floor(Math.random() * 200),
+                        maxHeight: 200,
+                        isMoving: false,
+                        direction: 'stopped',
+                        speed: 1 + Math.random() * 4
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
+            }
+
+            // 创建互动教学控制器 (5个)
+            for (let i = 1; i <= 5; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `互动教学控制器-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.INTERACTIVE_CONTROLLER,
+                    groupId: 'interactive-teaching',
+                    config: {
+                        autoStart: true,
+                        isActive: false,
+                        connectedTerminals: Math.floor(Math.random() * 20),
+                        maxTerminals: 20,
+                        signalQuality: ['excellent', 'good', 'fair'][Math.floor(Math.random() * 3)]
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
+            }
+
+            // 创建互动教学显示设备 (5个)
+            for (let i = 1; i <= 5; i++) {
+                if (deviceCount >= 100) break;
+                const device = this.deviceManager.addDevice({
+                    name: `互动教学显示器-${String(i).padStart(2, '0')}`,
+                    type: DeviceType.INTERACTIVE_DISPLAY,
+                    groupId: 'interactive-teaching',
+                    config: {
+                        autoStart: true,
+                        brightness: 80 + Math.random() * 20,
+                        resolution: ['1920x1080', '3840x2160', '2560x1440'][Math.floor(Math.random() * 3)],
+                        isActive: Math.random() > 0.5
+                    }
+                });
+                if (device?.config?.autoStart) this.deviceManager.startDevice(device.id);
+                deviceCount++;
+            }
+
+            console.log(`🎯 成功创建 ${deviceCount} 个不同类型设备用于开发测试`);
+            console.log(`📊 设备分布：`);
+            console.log(`   - 互动教学终端: 20个`);
+            console.log(`   - 环境监测器: 15个`);
+            console.log(`   - 学生电源终端: 20个`);
+            console.log(`   - 环境控制器: 10个`);
+            console.log(`   - 窗帘控制器: 8个`);
+            console.log(`   - 灯光控制器: 12个`);
+            console.log(`   - 升降控制器: 5个`);
+            console.log(`   - 互动教学控制器: 5个`);
+            console.log(`   - 互动教学显示器: 5个`);
 
         } catch (error) {
-            console.error('创建互动教学设备失败:', error);
+            console.error('创建设备失败:', error);
         }
     }
 
@@ -2452,7 +2537,7 @@ class ApiRouter {
             if (!currentQuestionId) {
                 res.json({
                     success: true,
-                    data: null,
+                    question: null,
                     message: '没有当前题目'
                 });
                 return;
@@ -2461,7 +2546,7 @@ class ApiRouter {
             const question = this.interactiveManager.questions.get(currentQuestionId);
             res.json({
                 success: true,
-                data: question || null
+                question: question || null
             });
         } catch (error) {
             res.status(500).json({
