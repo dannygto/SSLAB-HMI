@@ -17,9 +17,9 @@
         }
         .seat-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            max-width: 400px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            max-width: 600px;
             margin: 0 auto;
         }
         .seat {
@@ -108,7 +108,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="api-section">
-                    <h4><i class="bi bi-grid-3x3"></i> 座位布局 (A1-D4)</h4>
+                    <h4><i class="bi bi-grid-3x3"></i> 座位布局 (A1-H6) - 48个座位</h4>
                     <div class="seat-grid" id="seat-grid">
                         <!-- 座位将通过JavaScript动态生成 -->
                     </div>
@@ -117,10 +117,10 @@
                             <i class="bi bi-arrow-clockwise"></i> 刷新座位状态
                         </button>
                         <button class="btn btn-success btn-sm test-button ms-2" onclick="assignAllStudents()">
-                            <i class="bi bi-person-plus"></i> 一键分配16个学生
+                            <i class="bi bi-person-plus"></i> 一键分配48个学生
                         </button>
                         <button class="btn btn-warning btn-sm test-button ms-2" onclick="simulateAllAnswers()">
-                            <i class="bi bi-check2-square"></i> 一键模拟答题
+                            <i class="bi bi-check2-square"></i> 一键模拟48个答题
                         </button>
                     </div>
                 </div>
@@ -226,8 +226,52 @@
                                     <option value="">选择座位</option>
                                     <option value="A1">A1</option>
                                     <option value="A2">A2</option>
+                                    <option value="A3">A3</option>
+                                    <option value="A4">A4</option>
+                                    <option value="A5">A5</option>
+                                    <option value="A6">A6</option>
                                     <option value="B1">B1</option>
+                                    <option value="B2">B2</option>
+                                    <option value="B3">B3</option>
+                                    <option value="B4">B4</option>
+                                    <option value="B5">B5</option>
+                                    <option value="B6">B6</option>
                                     <option value="C1">C1</option>
+                                    <option value="C2">C2</option>
+                                    <option value="C3">C3</option>
+                                    <option value="C4">C4</option>
+                                    <option value="C5">C5</option>
+                                    <option value="C6">C6</option>
+                                    <option value="D1">D1</option>
+                                    <option value="D2">D2</option>
+                                    <option value="D3">D3</option>
+                                    <option value="D4">D4</option>
+                                    <option value="D5">D5</option>
+                                    <option value="D6">D6</option>
+                                    <option value="E1">E1</option>
+                                    <option value="E2">E2</option>
+                                    <option value="E3">E3</option>
+                                    <option value="E4">E4</option>
+                                    <option value="E5">E5</option>
+                                    <option value="E6">E6</option>
+                                    <option value="F1">F1</option>
+                                    <option value="F2">F2</option>
+                                    <option value="F3">F3</option>
+                                    <option value="F4">F4</option>
+                                    <option value="F5">F5</option>
+                                    <option value="F6">F6</option>
+                                    <option value="G1">G1</option>
+                                    <option value="G2">G2</option>
+                                    <option value="G3">G3</option>
+                                    <option value="G4">G4</option>
+                                    <option value="G5">G5</option>
+                                    <option value="G6">G6</option>
+                                    <option value="H1">H1</option>
+                                    <option value="H2">H2</option>
+                                    <option value="H3">H3</option>
+                                    <option value="H4">H4</option>
+                                    <option value="H5">H5</option>
+                                    <option value="H6">H6</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -251,8 +295,52 @@
                                     <option value="">选择座位</option>
                                     <option value="A1">A1</option>
                                     <option value="A2">A2</option>
+                                    <option value="A3">A3</option>
+                                    <option value="A4">A4</option>
+                                    <option value="A5">A5</option>
+                                    <option value="A6">A6</option>
                                     <option value="B1">B1</option>
+                                    <option value="B2">B2</option>
+                                    <option value="B3">B3</option>
+                                    <option value="B4">B4</option>
+                                    <option value="B5">B5</option>
+                                    <option value="B6">B6</option>
                                     <option value="C1">C1</option>
+                                    <option value="C2">C2</option>
+                                    <option value="C3">C3</option>
+                                    <option value="C4">C4</option>
+                                    <option value="C5">C5</option>
+                                    <option value="C6">C6</option>
+                                    <option value="D1">D1</option>
+                                    <option value="D2">D2</option>
+                                    <option value="D3">D3</option>
+                                    <option value="D4">D4</option>
+                                    <option value="D5">D5</option>
+                                    <option value="D6">D6</option>
+                                    <option value="E1">E1</option>
+                                    <option value="E2">E2</option>
+                                    <option value="E3">E3</option>
+                                    <option value="E4">E4</option>
+                                    <option value="E5">E5</option>
+                                    <option value="E6">E6</option>
+                                    <option value="F1">F1</option>
+                                    <option value="F2">F2</option>
+                                    <option value="F3">F3</option>
+                                    <option value="F4">F4</option>
+                                    <option value="F5">F5</option>
+                                    <option value="F6">F6</option>
+                                    <option value="G1">G1</option>
+                                    <option value="G2">G2</option>
+                                    <option value="G3">G3</option>
+                                    <option value="G4">G4</option>
+                                    <option value="G5">G5</option>
+                                    <option value="G6">G6</option>
+                                    <option value="H1">H1</option>
+                                    <option value="H2">H2</option>
+                                    <option value="H3">H3</option>
+                                    <option value="H4">H4</option>
+                                    <option value="H5">H5</option>
+                                    <option value="H6">H6</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
@@ -330,8 +418,8 @@
         // 生成座位网格
         function generateSeatGrid() {
             const seatGrid = document.getElementById('seat-grid');
-            const rows = ['A', 'B', 'C', 'D'];
-            const cols = [1, 2, 3, 4];
+            const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            const cols = [1, 2, 3, 4, 5, 6];
 
             seatGrid.innerHTML = '';
 
@@ -633,21 +721,35 @@
             }
         }
 
-        // 一键分配16个学生座位
+        // 一键分配48个学生座位
         async function assignAllStudents() {
             try {
                 const studentNames = [
-                    '张三', '李四', '王五', '赵六', '陈七', '刘八', '杨九', '黄十',
-                    '周小明', '吴小红', '孙小华', '胡小丽', '朱小强', '高小美', '林小刚', '罗小芳'
+                    // A排 (6个)
+                    '张三', '李四', '王五', '赵六', '陈七', '刘八',
+                    // B排 (6个)
+                    '杨九', '黄十', '周小明', '吴小红', '孙小华', '胡小丽',
+                    // C排 (6个)
+                    '朱小强', '高小美', '林小刚', '罗小芳', '郑小伟', '何小娟',
+                    // D排 (6个)
+                    '梁小军', '韩小雅', '冯小东', '曹小西', '邓小南', '许小北',
+                    // E排 (6个)
+                    '田小中', '董小上', '袁小下', '蒋小左', '崔小右', '谭小前',
+                    // F排 (6个)
+                    '廖小后', '范小大', '金小小', '石小高', '秦小矮', '薛小胖',
+                    // G排 (6个)
+                    '程小瘦', '贺小长', '顾小短', '毛小美', '邱小帅', '宋小萌',
+                    // H排 (6个)
+                    '康小乖', '严小酷', '钱小智', '施小勇', '牛小敏', '洪小亮'
                 ];
 
                 let successCount = 0;
                 let failCount = 0;
 
-                for (let row = 0; row < 4; row++) {
-                    for (let col = 0; col < 4; col++) {
-                        const seatId = String.fromCharCode(65 + row) + (col + 1); // A1, A2, ..., D4
-                        const studentName = studentNames[row * 4 + col];
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 6; col++) {
+                        const seatId = String.fromCharCode(65 + row) + (col + 1); // A1, A2, ..., H6
+                        const studentName = studentNames[row * 6 + col];
 
                         try {
                             const response = await fetch(`${API_BASE}/interactive/students`, {
@@ -679,10 +781,10 @@
 
                 // 显示结果
                 const result = {
-                    message: '一键分配学生完成',
+                    message: '一键分配48个学生完成',
                     success: successCount,
                     failed: failCount,
-                    total: 16
+                    total: 48
                 };
                 displayResponse(result, '/interactive/students/assign (批量)', 'POST');
 
@@ -710,9 +812,9 @@
                 let failCount = 0;
                 const answers = ['A', 'B', 'C', 'D'];
 
-                for (let row = 0; row < 4; row++) {
-                    for (let col = 0; col < 4; col++) {
-                        const seatId = String.fromCharCode(65 + row) + (col + 1); // A1, A2, ..., D4
+                for (let row = 0; row < 8; row++) {
+                    for (let col = 0; col < 6; col++) {
+                        const seatId = String.fromCharCode(65 + row) + (col + 1); // A1, A2, ..., H6
                         const randomAnswer = answers[Math.floor(Math.random() * answers.length)];
 
                         try {
@@ -744,11 +846,11 @@
 
                 // 显示结果
                 const result = {
-                    message: '一键模拟答题完成',
+                    message: '一键模拟48个学生答题完成',
                     questionId: questionData.question.id,
                     success: successCount,
                     failed: failCount,
-                    total: 16
+                    total: 48
                 };
                 displayResponse(result, '/interactive/answers/submit (批量)', 'POST');
 

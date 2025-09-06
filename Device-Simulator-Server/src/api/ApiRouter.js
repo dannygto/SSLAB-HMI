@@ -1367,10 +1367,10 @@ class ApiRouter {
             this.interactiveManager.questions.set(question.id, question);
         });
 
-        // 初始化16个座位 (A1-D4)
-        const rows = ['A', 'B', 'C', 'D'];
+        // 初始化48个座位 (A1-H6)
+        const rows = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         for (const row of rows) {
-            for (let col = 1; col <= 4; col++) {
+            for (let col = 1; col <= 6; col++) {
                 const seatId = `${row}${col}`;
                 this.interactiveManager.students.set(seatId, {
                     seatId,

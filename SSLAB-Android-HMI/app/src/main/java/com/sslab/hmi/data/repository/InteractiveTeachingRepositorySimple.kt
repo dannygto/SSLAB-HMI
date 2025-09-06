@@ -1,6 +1,12 @@
 package com.sslab.hmi.data.repository
 
-import kotlinx.coroutines.flow.Flow
+impo    /**
+     * 生成初始的48个座位 (A1-H6)
+     */
+    private fun generateInitialSeats(): List<StudentSeat> {
+        val seats = mutableListOf<StudentSeat>()
+        val rows = listOf("A", "B", "C", "D", "E", "F", "G", "H")
+        val cols = listOf(1, 2, 3, 4, 5, 6)inx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,12 +50,12 @@ class InteractiveTeachingRepositorySimple @Inject constructor(
     val currentSession: StateFlow<com.sslab.hmi.data.network.InteractiveSession?> = _currentSession.asStateFlow()
     
     /**
-     * 生成初始的16个座位 (A1-D4)
+     * 生成初始的48个座位 (A1-H6)
      */
     private fun generateInitialSeats(): List<StudentSeat> {
         val seats = mutableListOf<StudentSeat>()
-        val rows = listOf("A", "B", "C", "D")
-        val cols = listOf(1, 2, 3, 4)
+        val rows = listOf("A", "B", "C", "D", "E", "F", "G", "H")
+        val cols = listOf(1, 2, 3, 4, 5, 6)
         
         rows.forEach { row ->
             cols.forEach { col ->

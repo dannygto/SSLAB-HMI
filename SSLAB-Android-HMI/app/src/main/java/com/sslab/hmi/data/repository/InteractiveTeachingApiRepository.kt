@@ -383,12 +383,12 @@ class InteractiveTeachingApiRepository @Inject constructor(
      * 从StudentInfo生成StudentSeat
      */
     private fun generateSeatsFromStudentInfo(studentInfoList: List<StudentInfo>): List<StudentSeat> {
-        // 首先生成所有16个空座位 (A1-D4)
+        // 首先生成所有48个空座位 (A1-H6)
         val seats = mutableListOf<StudentSeat>()
-        val rows = listOf("A", "B", "C", "D")
+        val rows = listOf("A", "B", "C", "D", "E", "F", "G", "H")
         
         for (row in rows) {
-            for (col in 1..4) {
+            for (col in 1..6) {
                 val seatId = "$row$col"
                 seats.add(
                     StudentSeat(
@@ -433,14 +433,14 @@ class InteractiveTeachingApiRepository @Inject constructor(
     }
     
     /**
-     * 生成默认座位 (A1-D4)
+     * 生成默认座位 (A1-H6)
      */
     private fun generateDefaultSeats(): List<StudentSeat> {
         val seats = mutableListOf<StudentSeat>()
-        val rows = listOf("A", "B", "C", "D")
+        val rows = listOf("A", "B", "C", "D", "E", "F", "G", "H")
         
         for (row in rows) {
-            for (col in 1..4) {
+            for (col in 1..6) {
                 val seatId = "$row$col"
                 seats.add(
                     StudentSeat(

@@ -415,7 +415,7 @@ fun StudentSeatCard(
 }
 
 /**
- * 16个学生座位网格布局 (A1-D4)
+ * 48个学生座位网格布局 (A1-H6)
  */
 @Composable
 fun StudentSeatsGrid(
@@ -445,12 +445,12 @@ fun StudentSeatsGrid(
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // 4x4网格布局
+            // 8x6网格布局
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // A行到D行
-                listOf("A", "B", "C", "D").forEach { row ->
+                // A行到H行
+                listOf("A", "B", "C", "D", "E", "F", "G", "H").forEach { row ->
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -470,8 +470,8 @@ fun StudentSeatsGrid(
                             )
                         }
                         
-                        // 该行的4个座位
-                        (1..4).forEach { col ->
+                        // 该行的6个座位
+                        (1..6).forEach { col ->
                             val seatId = "$row$col"
                             val seat = seats.find { it.seatId == seatId }
                             if (seat != null) {

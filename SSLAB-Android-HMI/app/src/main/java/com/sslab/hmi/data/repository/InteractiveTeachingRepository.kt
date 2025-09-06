@@ -33,12 +33,12 @@ class InteractiveTeachingRepository @Inject constructor() {
     val studentAnswers: StateFlow<List<StudentAnswer>> = _studentAnswers.asStateFlow()
     
     /**
-     * 生成初始的16个座位 (A1-D4)
+     * 生成初始的48个座位 (A1-H6)
      */
     private fun generateInitialSeats(): List<StudentSeat> {
         val seats = mutableListOf<StudentSeat>()
-        val rows = listOf("A", "B", "C", "D")
-        val cols = listOf(1, 2, 3, 4)
+        val rows = listOf("A", "B", "C", "D", "E", "F", "G", "H")
+        val cols = listOf(1, 2, 3, 4, 5, 6)
         
         // 预设一些学生名单作为演示
         val demoStudents = mapOf(
